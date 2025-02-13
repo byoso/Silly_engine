@@ -37,6 +37,14 @@ class Color:
     bg_violet = "\x1b[2;30;45m"
     bg_white = "\x1b[2;30;47m"
 
+    def demo(self):
+        """print all available colors"""
+        no_display = ["end", "demo"]
+        for attr in dir(self):
+            if not attr.startswith("__") and attr not in no_display:
+                print(f"{getattr(self, attr)}{attr}{self.end}")
+
+c = Color()
 
 class Title:
     def __init__(self, text="", abc_map=abc_map, color=None, step=0):

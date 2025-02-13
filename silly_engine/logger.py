@@ -43,10 +43,11 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 class Logger(logging.Logger):
-    def __init__(self, name=__name__, level="INFO"):
+    def __init__(self, name :str=__name__, level: str="INFO"):
         super().__init__(name)
         self.console_handler = logging.StreamHandler()
         self.console_handler.setFormatter(CustomFormatter())
         self.addHandler(self.console_handler)
-        self.setLevel(levels[level])
-        
+
+    def setLevel(self, level):
+        super().setLevel(levels[level])

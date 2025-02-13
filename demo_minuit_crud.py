@@ -13,13 +13,13 @@ from silly_engine import (
     print_title,
     c, Logger)
 
-
 ####################################################################################
 # Global variables
 ####################################################################################
 
 WIDTH = 80  # try 80, 100, 120...
 logger = Logger("Minuit-Demo")
+logger.setLevel("DEBUG")
 
 intro_text = (
     "    In the valley of the Minuit, you can create, list, edit and delete ferocious characters. They can be Barbarians, Magicians, Thieves,"
@@ -39,10 +39,11 @@ characters = [
 # The character form
 ####################################################################################
 
-character_form = Form([
+character_form = Form(
+    [
         Field("name", required = True, error_message=f"{c.warning}A name is required{c.end}"),
         Field("strength", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Strength must be a positive number{c.end}", required=True, default=10),
-        Field("mana", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Mana must be a positive number{c.end}"),
+        Field("mana", validator=lambda x: x>0, typing=int, error_message=f"{c.warning}Mana must be a positive number or null.{c.end}"),
         ListField(
             "occupation", "\nYour ocupation ?", choices=("Barbarian", "Magician", "Thieve", "Other"),
             error_message=f"{c.warning}Enter a number from 1 to 4{c.end}"
@@ -108,7 +109,7 @@ def detail_view():
     menu.ask()
 
 def exit_view():
-    logger.info("Goodbye !!")
+    logger.info("Goodbye !! btw this line is the logger.py demo ;)")
     quit()
 
 
