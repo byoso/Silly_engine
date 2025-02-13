@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+WIDTH=80
 
 class RouterError(Exception):
     def __init__(self, message: str="Router Error", status: int=None, *args, **kwargs):
@@ -22,7 +23,7 @@ class Router:
             separator: str=" ",
             query_separator="?",
             queries_separator="+",
-            width=100):
+            width=WIDTH):
         self.name = name
         self.separator = separator
         self.query_separator = query_separator
