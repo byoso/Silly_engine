@@ -7,19 +7,10 @@ from silly_engine import (
     Confirmation,
     clear,
     print_title,
-    Logger,
     c,
-    Title,
     Field,
     ListField,
-    TextField,
-    AutoArray,
-    Router,
-    Subrouter,
-    RouterError,
-    JsonDbError,
-    FieldError,
-    FormError,
+    AutoArray
 )
 
 WIDTH = 120
@@ -97,6 +88,7 @@ def search_by_name():
             if index is not None:
                 app_data["current_contact"] = contacts[index]
                 detail_view()
+    menu.messages.append(f"{c.warning}No contact found{c.end}")
     list_view()
 
 def exit_view():

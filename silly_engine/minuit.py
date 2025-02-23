@@ -258,6 +258,7 @@ class Menu:
         self.error_message = error_message
         self.clear_on_error = clear_on_error
         self.items = {}
+        self.messages = []
         if items:
             self.add_items(items)
 
@@ -290,6 +291,8 @@ class Menu:
         display += buttons_line + "\n" + "="*(self.width) + "\n"
         display += error or ''
         print(display)
+        while len(self.messages) > 0:
+            print(self.messages.pop(0))
         value = input(self.prompt or PROMPT)
         if value in self.items:
             item = self.items[value]
