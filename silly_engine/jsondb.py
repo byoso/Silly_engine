@@ -4,9 +4,9 @@
 Use a json file as a database, read the docstrings to know more.
 
 e.g.:
-from jsondb import JsonDB
+from JsonDb import JsonDb
 
-db = JsonDB(
+db = JsonDb(
     "data.json",
     autosave=True
     )
@@ -29,14 +29,14 @@ import os
 import uuid
 
 
-class JsonDBError(Exception):
+class JsonDbError(Exception):
     pass
 
 
-class JsonDB:
+class JsonDb:
     """Interface with a json file"""
 
-    def __init__(self, file=None, autosave=False):
+    def __init__(self, file=None, autosave=True):
         self.is_autosaving = autosave
         self.file = file
         self.tables = {}
@@ -46,7 +46,7 @@ class JsonDB:
 
     def __repr__(self):
         table_count = len(self.tables)
-        return f"<JsonDB({self.file}) tables: {table_count} >"
+        return f"<JsonDb({self.file}) tables: {table_count} >"
 
     def _autosave(self):
         """Save the database if autosave is enabled"""
@@ -86,7 +86,7 @@ class JsonDB:
     def display(self):
         tables_count = len(self.tables)
         display = '\n+'+'-'*54 + "+\n"
-        display += f"|*-- JsonDB --* file: {self.file} - tables: {tables_count:<13}|\n"
+        display += f"|*-- JsonDb --* file: {self.file} - tables: {tables_count:<13}|\n"
         display += f"| {'Tables':40} | {'Item(s)':10}|\n"
         display += '+'+'-'*54 + "+\n"
 
@@ -124,9 +124,28 @@ class Table:
         self._autosave()
         return item
 
+    def update(self, input_data: dict, id=None):
+        """Update an item in the table"""
+        if input_data.get("_id") is None:
+            if id is None:
+                raise JsonDbError("The item must have an '_id' key")
+            else:
+                input_data["_id"] = id
+        item = Item(input_data, self, id=input_data["_id"])
+        self.data[item.id] = item
+        self._autosave()
+        return item
+
+    def delete(self, input_data: dict):
+        """Delete an item from the table"""
+        if input_data.get("_id") is None:
+            raise JsonDbError("The item must have an '_id' key")
+        del self.data[input_data["_id"]]
+        self._autosave()
+
     def all(self):
         """Returns all the items of the table"""
-        return self.query(lambda x: True)
+        return self.filter(lambda x: True)
 
     def all_objects(self):
         """Returns all the items of the table"""
@@ -168,9 +187,9 @@ class Table:
         if key in self.data:
             return self.data[key]
 
-    def query(self, query_func=None):
+    def filter(self, query_func=None):
         """Takes one parameter function that returns a boolean value
-        example: queryset = Table.query(lambda x: x['age'] > 18)
+        example: queryset = Table.filter(lambda x: x['age'] > 18)
 
         returns a dict of datas.
         """
@@ -183,9 +202,9 @@ class Table:
                 continue
         return queryset
 
-    def query_objects(self, query_func=None):
+    def filter_objects(self, query_func=None):
         """Takes one parameter function that returns a boolean value
-        example: queryset = Table.query(lambda x: x['age'] > 18)
+        example: queryset = Table.filter_objects(lambda x: x['age'] > 18)
 
         returns a list of Item objects.
         """
@@ -198,7 +217,7 @@ class Table:
                 continue
         return queryset
 
-    def query_delete(self, query_func=None):
+    def filter_delete(self, query_func=None):
         """Takes one parameter function that returns a boolean value
         example: Table.query_delete(lambda x: x['age'] > 18)
         """
@@ -235,7 +254,7 @@ class Item:
         """args are tuples of (key, value)"""
         for arg in args:
             if not type(arg) is tuple:
-                raise JsonDBError('expected argument type is tuple')
+                raise JsonDbError('expected argument type is tuple')
             self.data[arg[0]] = arg[1]
         self._autosave()
         return self
@@ -243,7 +262,7 @@ class Item:
     def del_attr(self, *args: str):
         for arg in args:
             if not type(arg) is str:
-                raise JsonDBError('expected argument type is str')
+                raise JsonDbError('expected argument type is str')
             if arg in self.data:
                 del self.data[arg]
                 self._autosave()
