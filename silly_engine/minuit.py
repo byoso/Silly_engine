@@ -1,4 +1,5 @@
 import os
+from typing import Callable
 
 
 PROMPT = " > "
@@ -229,6 +230,24 @@ class Form:
         return data
 
 
+class MenuItem:
+    def __init__(self, key: str|int=None, label: str="", callback: Callable|None=None, *args, **kwargs):
+        if key is None:
+            raise FieldError("Key is required for MenuItem")
+        if callback is None:
+            raise FieldError("Callback is required for MenuItem")
+        self.key = str(key)
+        self.label = label
+        self.callback = callback
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self):
+        self.callback(*self.args, **self.kwargs)
+
+    def __str__(self):
+        return f"<MenuItem: {self.label}-{self.callback}>"
+
 
 class Menu:
     def __init__(self, items=None, title="Menu", prompt=PROMPT, width=WIDTH, error_message="Invalid choice", clear_on_error=False):
@@ -236,29 +255,33 @@ class Menu:
         self.title = title
         self.prompt = prompt
         self.width = width
-        self.callbacks = {}
-        self.labels = {}
         self.error_message = error_message
         self.clear_on_error = clear_on_error
+        self.items = {}
         if items:
             self.add_items(items)
-        else:
-            self.items = []
 
     def add_items(self, items):
         for item in items:
             self.add_item(item)
 
-    def add_item(self, item):
-        self.callbacks[str(item[0])] = item[2]
-        self.labels[item[0]] = item[1]
+    def add_item(self, item: tuple|list|MenuItem):
+        if isinstance(item, MenuItem):
+            self.items[str(item.key)] = item
+            return
+        try:
+            item = MenuItem(*item)
+        except Exception as e:
+            raise FieldError(f"Invalid menu item: {e}")
+        self.items[item.key] = item
 
     def ask(self, error=None):
         display = f"\n=== {self.title} " + "="*(self.width - len(self.title) - 5) + "\n"
         buttons = []
         buttons_line = "|"
-        for key in self.labels:
-            buttons.append(f"{key}: {self.labels[key]}")
+        for key in self.items:
+            item = self.items[key]
+            buttons.append(f"{item.key}: {item.label}")
         for button in buttons:
             if len(buttons_line) + len(button) > self.width - 5:
                 display += buttons_line + "\n" + "-"*(self.width) + "\n"
@@ -268,8 +291,9 @@ class Menu:
         display += error or ''
         print(display)
         value = input(self.prompt or PROMPT)
-        if value in self.callbacks:
-            self.callbacks[value]()
+        if value in self.items:
+            item = self.items[value]
+            item.callback(*item.args, **item.kwargs)
         else:
             if self.clear_on_error:
                 clear()
@@ -279,6 +303,7 @@ class AutoArray:
     """Build quickly an array of datas, the only required parameter is a list of dictionaries
     containing only strings, integers or booleans"""
     def __init__(self, liste, title=None, color_1=None, color_2=None, exclude=None, include=None, width=WIDTH):
+        self.liste = liste
         self.as_string = ""
         if include is not None and exclude is not None:
             raise FieldError("You can't have both include and exclude set", "Internal")
@@ -332,3 +357,8 @@ class AutoArray:
 
     def __str__(self):
         return self.as_string
+
+    def get(self, index: int):
+        if index < len(self.liste) and index >= 0:
+            return self.liste[index]
+        return None
