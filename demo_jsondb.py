@@ -14,10 +14,13 @@ from silly_engine import (
 )
 
 WIDTH = 120
-db = JsonDb("data.json", autosave=True)
+db = JsonDb("data.json")
 
 Contact = db.table("Contact")
-Setting = db.table("Settings")
+Settings = db.table("Settings")
+
+if not Settings.first():  # singleton
+    Settings.add({"_version": "1.0"})
 
 app_data = {
     "current_contact": None,
@@ -32,7 +35,7 @@ contact_form = Form(
 )
 
 def list_view():
-    clear()
+    # clear()
     print_title("Contacts", color=c.blue, step=2)
     contacts = Contact.all()
     array = AutoArray(contacts, include=["name", "phone", "email"], color_1=c.bg_green, color_2=c.bg_blue, width=WIDTH)
