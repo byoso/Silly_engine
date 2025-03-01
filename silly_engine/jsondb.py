@@ -14,8 +14,8 @@ db = JsonDb(
 Truc = db.table("Truc")
 Machin = db.table("Machin")
 
-object1 = Truc.add({"name": "machin", "age": 12})
-object2 = Truc.add({"name": "bidule", "age": 18})
+object1 = Truc.insert({"name": "machin", "age": 12})
+object2 = Truc.insert({"name": "bidule", "age": 18})
 
 id = object1.id
 
@@ -28,9 +28,24 @@ import json
 import os
 import uuid
 
+from typing import Self
+
 
 class JsonDbError(Exception):
     pass
+
+class MigrationReport:
+    def __init__(self, applied: list, skipped: list, errors: list, done: bool) -> Self:
+        self.applied = applied
+        self.skipped = skipped
+        self.errors = errors
+        self.done = done
+
+    def __repr__(self):
+        return f"<Migration report - applied: {len(self.applied)}, skipped: {len(self.skipped)}, errors: {len(self.errors)}, done: {self.done}>"
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class JsonDb:
@@ -81,9 +96,9 @@ class JsonDb:
             for table_name in data:
                 new_table = self.table(table_name)
                 for id in data[table_name]:
-                    new_table.add(data[table_name][id], id)
+                    new_table.insert(data[table_name][id], id)
 
-    def display(self):
+    def show(self):
         tables_count = len(self.tables)
         display = '\n+'+'-'*54 + "+\n"
         display += f"|*-- JsonDb --* file: {self.file} - tables: {tables_count:<13}|\n"
@@ -117,7 +132,7 @@ class Table:
         if self.database.is_autosaving:
             self.database.save()
 
-    def add(self, input_data: dict, id=None):
+    def insert(self, input_data: dict, id=None):
         """Add an item to the table"""
         item = Item(input_data, self, id=id)
         self.data[item.id] = item
@@ -136,11 +151,13 @@ class Table:
         self._autosave()
         return item
 
-    def delete(self, input_data: dict):
+    def delete(self, input_data: dict, id=None):
         """Delete an item from the table"""
-        if input_data.get("_id") is None:
-            raise JsonDbError("The item must have an '_id' key")
-        del self.data[input_data["_id"]]
+        if id is None:
+            if input_data.get('_id') is None:
+                raise JsonDbError("The item must have an '_id' key")
+            id = input_data.get('_id')
+        del self.data[id]
         self._autosave()
 
     def all(self):
@@ -151,7 +168,7 @@ class Table:
         """Returns all the items of the table"""
         return self.data
 
-    def display(self):
+    def show(self):
         """Fancy representation of the table and its items
         e.g.: print(Table.display())
         """
@@ -233,9 +250,37 @@ class Table:
             item.delete()
         self._autosave()
 
+    def migrate(self, func, filter=None, rollback_on_error=False) -> MigrationReport:
+        """Takes one parameter function that returns a boolean value
+        example: Table.map(lambda x: x['age'] += 1)
+        """
+        # map(func, self.data)
+        errors = []
+        migrated = []
+        skipped = []
+
+        for id in self.data:
+            item = self.data[id]
+            if filter is None or filter(item.data):
+                try:
+                    func(item.data)
+                except KeyError:
+                    errors.append(item)
+                    continue
+                migrated.append(item.data.get("_id"))
+            else:
+                skipped.append(item)
+        if rollback_on_error and errors:
+            return MigrationReport(migrated, skipped, errors, done=False)
+        self._autosave()
+
+        return MigrationReport(migrated, skipped, errors, done=True)
+
 
 class Item:
     def __init__(self, data, table, id=None):
+        if "_id" in data:
+            self.id = data["_id"]
         self.id = id
         if id is None:
             self.id = str(uuid.uuid4())
@@ -244,7 +289,7 @@ class Item:
         self.data['_id'] = self.id
 
     def __repr__(self):
-        return f"<{self.id}: {self.data}>"
+        return f"<Item - {self.data}>"
 
     def _autosave(self):
         if self.table.database.is_autosaving:
@@ -266,6 +311,12 @@ class Item:
             if arg in self.data:
                 del self.data[arg]
                 self._autosave()
+        return self
+
+    def update(self, data):
+        for key in data:
+            self.data[key] = data[key]
+        self._autosave()
         return self
 
     def delete(self):

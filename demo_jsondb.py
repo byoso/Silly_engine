@@ -20,7 +20,7 @@ Contact = db.table("Contact")
 Settings = db.table("Settings")
 
 if not Settings.first():  # singleton
-    Settings.add({"_version": "1.0"})
+    Settings.insert({"_version": 1.0})
 
 app_data = {
     "current_contact": None,
@@ -35,7 +35,7 @@ contact_form = Form(
 )
 
 def list_view():
-    # clear()
+    clear()
     print_title("Contacts", color=c.blue, step=2)
     contacts = Contact.all()
     array = AutoArray(contacts, include=["name", "phone", "email"], color_1=c.bg_green, color_2=c.bg_blue, width=WIDTH)
@@ -47,7 +47,7 @@ def create_view():
     print_title("Create a contact", step=2)
     contact = contact_form.ask()
     if contact:
-        Contact.add(contact)
+        Contact.insert(contact)
     list_view()
 
 def select_contact(action=None):
