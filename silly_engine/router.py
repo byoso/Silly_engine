@@ -1,9 +1,11 @@
 #! /usr/bin/env python3
 
+import sys
+
 WIDTH=80
 
 class RouterError(Exception):
-    def __init__(self, message: str="Router Error", status: int=None, *args, **kwargs):
+    def __init__(self, message: str="Router Error", status: int | None=None, *args, **kwargs):
         self.status = status
         self.message = message
         super().__init__({'status': self.status, 'message': self.message})
@@ -18,7 +20,8 @@ class Subrouter:
 
 class Router:
     def __init__(
-            self, routes: dict=None,
+            self,
+            routes: list = list(),
             name: str="Silly Router",
             separator: str=" ",
             query_separator="?",
@@ -42,16 +45,15 @@ class Router:
         if routes is not None:
             self.add_routes(routes)
 
-    def add_routes(self, routes):
+    def add_routes(self, routes: list) -> None:
         try:
-            routes = list(routes)
-        except TypeError:
-            raise RouterError("Routes must be a list or a tuple",
-                "Router building")
+            assert isinstance(routes, list) or isinstance(routes, tuple)
+        except AssertionError:
+            raise RouterError("Router building: Routes must be a list or a tuple")
         for route in routes:
             self.add_route(route)
 
-    def add_route(self, incoming_route):
+    def add_route(self, incoming_route: str | Subrouter | list) -> None:
         if isinstance(incoming_route, str):
             self._help.append("# " + incoming_route)
             return
@@ -59,28 +61,26 @@ class Router:
             self._help.append(f"@ {incoming_route.prefix:<50} -> {incoming_route.description}")
             self._subroutes[incoming_route.prefix] = incoming_route.router
             return
+        # route is a list:
         try:
-            incoming_route = list(incoming_route)
-        except TypeError:
-            raise RouterError("A route must be a list, a tuple, or a Subrouter",
-                "Route building")
+            assert isinstance(incoming_route, list)
+        except AssertionError:
+            raise RouterError("Route building: A route must be a list, a tuple, or a Subrouter")
+
         if not 2 <= len(incoming_route) <= 3:
             raise RouterError(
-                "A route must have 2 or 3 elements <route, callable, description (Optional)>",
-                "Route building")
+                "Route building: A route must have 2 or 3 elements <route, callable, description (Optional)>")
         if not isinstance(incoming_route[0], (str, list, tuple)):
-            raise RouterError("The 1st element of a route must be a string, list, or tuple",
-                "Route building")
+            raise RouterError("Route building: The 1st element of a route must be a string, list, or tuple",)
         if len(incoming_route) == 3:
             if not isinstance(incoming_route[2], str):
-                raise RouterError("The 3rd element of a route must be a string as a description for the help",
-            "Route building")
+                raise RouterError(
+                    "Route building: The 3rd element of a route must be a string as a description for the help")
             self._help.append(f"- {str(incoming_route[0]):<50} -> {str(incoming_route[2])}")
         else:
             incoming_route.append("")
         if not callable(incoming_route[1]):
-            raise RouterError("The 2nd element of a route must be callable",
-                "Route building")
+            raise RouterError("Route building: The 2nd element of a route must be callable")
         self._build_route(incoming_route)
 
     @property
@@ -89,7 +89,7 @@ class Router:
         self.__datas["logs"] = []
         return logs
 
-    def _build_route(self, incoming_route):
+    def _build_route(self, incoming_route: tuple | list) -> None:
         # if multi route possible
         if isinstance(incoming_route[0], (tuple, list)):
             for route in incoming_route[0]:
@@ -98,8 +98,7 @@ class Router:
         if isinstance(incoming_route[0], str):
             path = incoming_route[0].split(self.separator)
         else:
-            raise RouterError("A route must be a string, list of str, or tuple of str",
-                "Route building")
+            raise RouterError("Route building: A route must be a string, list of str, or tuple of str")
 
         # dictionary by legnth of path
         if not len(path) in self._routes:
@@ -123,20 +122,18 @@ class Router:
         help += "\n" + "#" * self.width
         return help
 
-    def display_help(self, **kwargs):
+    def display_help(self, **kwargs) -> None:
         print(self.help)
 
 
-    def query(self, query="", method='GET', context={}, query_params=None):
-        if not isinstance(query, str):
+    def query(self, query: str | list =sys.argv[1:], method='GET', context={}, query_params=None):
+        if isinstance(query, list):
             try:
                 query = self.separator.join(query)
             except TypeError:
-                raise RouterError("Query must be a string or a list of strings",
-                    "Bad query")
+                raise RouterError("Bad query: Query must be a string or a list of strings")
         if query.count(self.query_separator) > 1:
-            raise RouterError(f"Query must have only one '{self.query_separator}' separator",
-                "Bad query")
+            raise RouterError(f"Bad query: Query must have only one '{self.query_separator}' separator")
         path = query.split(self.query_separator)[0].strip().split(self.separator)
         params = query.split(self.query_separator)[1].strip().split(self.queries_separator) if self.query_separator in query else None
 
@@ -151,9 +148,13 @@ class Router:
             raise RouterError(f"Route not found for path: {path}", 404)
         route = self._get_route(path, self._routes.get(len(path)))
         kwargs = self._get_kwargs(route, path)
-        kwargs["query_params"] = query_params
-        kwargs["context"] = context
-        return route[0](**kwargs)
+        if query_params:
+            kwargs["query_params"] = query_params
+        if context:
+            kwargs["context"] = context
+        if kwargs:
+            return route[0](**kwargs)
+        return route[0]()
 
     def _get_kwargs(self, route, query):
         kwargs = {}
@@ -172,8 +173,7 @@ class Router:
                         elif typing == "bool":
                             value = bool(int(value))
                     except ValueError:
-                        raise RouterError(f"Value '{value}' for '{key}' is not the expected type '{typing}'",
-                            "Bad query")
+                        raise RouterError(f"Bad query: Value '{value}' for '{key}' is not the expected type '{typing}'")
                 kwargs[key] = value
             index += 1
         return kwargs

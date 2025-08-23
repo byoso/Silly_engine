@@ -11,136 +11,261 @@ db = JsonDb(
     autosave=True
     )
 
-Truc = db.table("Truc")
-Machin = db.table("Machin")
+Truc = db.collection("Truc")
+Machin = db.collection("Machin")
 
 object1 = Truc.insert({"name": "machin", "age": 12})
 object2 = Truc.insert({"name": "bidule", "age": 18})
 
-id = object1.id
+key = object1["_id"]
 
-print(Truc.get(id))
+print(Truc.get(key))
 
 """
-
+from __future__ import annotations
 
 import json
 import os
 import uuid
 
-from typing import Self
+from typing import Any, Callable, Self
+
+WIDTH=80
 
 
 class JsonDbError(Exception):
     pass
 
-class MigrationReport:
-    def __init__(self, applied: list, skipped: list, errors: list, done: bool) -> Self:
-        self.applied = applied
-        self.skipped = skipped
-        self.errors = errors
-        self.done = done
 
-    def __repr__(self):
-        return f"<Migration report - applied: {len(self.applied)}, skipped: {len(self.skipped)}, errors: {len(self.errors)}, done: {self.done}>"
+class Version:
+    """
+    class to handle versions in order to migrate or not the database
+    """
+    def __init__(self, str_version: str = "0.0.0") -> None:
+        list_version = str_version.split(".")
+        try:
+            self.major = int(list_version[0])
+            self.minor = int(list_version[1])
+            self.patch = int(list_version[2])
+        except (IndexError, ValueError):
+            raise JsonDbError("Version: a version must be of the form 'x.x.x' where x are integers (major, minor, patch)")
 
-    def __str__(self):
-        return self.__repr__()
+    def __str__(self) -> str:
+        return f"{self.major}.{self.minor}.{self.patch}"
+
+    def __repr__(self) -> str:
+        return f"Version('{self}')"
+
+    def _as_tuple(self) -> tuple[int, int, int]:
+        """Retourne la version sous forme de tuple (major, minor, patch)."""
+        return (self.major, self.minor, self.patch)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Version):
+            return NotImplemented
+        return self._as_tuple() == other._as_tuple()
+
+    def __lt__(self, other) -> bool:
+        if not isinstance(other, Version):
+            return NotImplemented
+        return self._as_tuple() < other._as_tuple()
+
+    def __gt__(self, other) -> bool:
+        if not isinstance(other, Version):
+            return NotImplemented
+        return self._as_tuple() > other._as_tuple()
+
+    def __le__(self, other) -> bool:
+        return self == other or self < other
+
+    def __ge__(self, other) -> bool:
+        return self == other or self > other
+
+
+class Item:
+    def __init__(self, data, collection, id=None) -> None:
+        if "_id" in data:
+            self.id = data["_id"]
+        self.id = id
+        if id is None:
+            self.id = str(uuid.uuid4())
+        self.collection = collection
+        self.data = data
+        self.data['_id'] = self.id
+
+    def __repr__(self) -> str:
+        return f"<Item - {self.data}>"
+
+    def _autosave(self) -> None:
+        if self.collection.database.is_autosaving:
+            self.collection.database.save()
+
+    def set(self, *args: tuple) -> Self:
+        """args are tuples of (key, value)"""
+        try:
+            for arg in args:
+                if not isinstance(arg, tuple):
+                    raise JsonDbError('expected argument type is tuple')
+                self.data[arg[0]] = arg[1]
+        except JsonDbError as error:
+            raise error
+        self._autosave()
+        return self
+
+    def del_attr(self, *args: str) -> Self:
+        for arg in args:
+            if not type(arg) is str:
+                raise JsonDbError('expected argument type is str')
+            if arg in self.data:
+                del self.data[arg]
+        self._autosave()
+        return self
+
+    def update(self, data) -> Self:
+        for key in data:
+            self.data[key] = data[key]
+        self._autosave()
+        return self
+
+    def delete(self) -> None:
+        del self.collection.data[self.id]
+        self._autosave()
 
 
 class JsonDb:
     """Interface with a json file"""
 
-    def __init__(self, file=None, autosave=True):
+    def __init__(
+            self, file: str="db.json", autosave: bool=False,
+            version: str="0.0.0", migrations: dict[str, Callable] | None=None,
+            width: int=WIDTH
+            ) -> None:
         self.is_autosaving = autosave
         self.file = file
-        self.tables = {}
+        self.collections = {}
+        self.width = width
+        self._version = version
+        self._migrations = migrations
 
         if os.path.exists(self.file):
             self.load()
 
-    def __repr__(self):
-        table_count = len(self.tables)
-        return f"<JsonDb({self.file}) tables: {table_count} >"
+        # check _settings and version
+        settings = self.collection("_settings")
+        recorded_settings = settings.first()
+        if recorded_settings is None:
+            settings = self.collection("_settings")
+            settings.first_update({"version": self._version})
+            self.save()
+        elif recorded_settings.get("version", None) is None:
+            settings.first_update({"version": self._version})
 
-    def _autosave(self):
+        # migrations
+        recorded_settings = settings.first()
+        assert recorded_settings is not None
+        recorded_version = recorded_settings.get("version", "0.0.0")
+        assert recorded_version is not None
+        if self._migrations is not None:
+            for migration in self._migrations:
+                if Version(recorded_version) < Version(migration) <= Version(self._version):
+                    print(f"Migration to v{migration}...")
+                    self._migrations[migration](self)
+                    settings.first_update({"version": migration})
+                    print(f"Successfully upgraded JsonDb to v{migration}")
+
+
+
+    def __repr__(self) -> str:
+        collection_count = len(self.collections)
+        return f"<JsonDb({self.file}, v{self._version}) collections: {collection_count} >"
+
+    def _autosave(self) -> None:
         """Save the database if autosave is enabled"""
         if self.is_autosaving:
             self.save()
 
-    def table(self, name):
-        if name not in self.tables:
-            self.tables[name] = Table(name, self)
+    def collection(self, name: str) -> Collection:
+        if name not in self.collections:
+            self.collections[name] = Collection(name, self)
             self._autosave()
-            return self.tables[name]
+            return self.collections[name]
         else:
-            return self.tables[name]
+            return self.collections[name]
 
-    def save(self):
+    def save(self) -> None:
         if self.file is None:
             return
         data = {}
-        for table in self.tables:
-            data[table] = {}
-            for id in self.tables[table].data:
-                data[table][id] = self.tables[table].data[id].data
+        for collection in self.collections:
+            data[collection] = {}
+            for id in self.collections[collection].data:
+                data[collection][id] = self.collections[collection].data[id].data
+        try:
+            json_str = json.dumps(data, indent=2)
+        except (TypeError, ValueError) as e:
+            raise JsonDbError(e)
         with open(self.file, 'w') as file:
-            json.dump(data, file, indent=2)
+            file.write(json_str)
 
-    def load(self):
+    def load(self) -> None:
         if self.file is None:
             return
         if os.path.exists(self.file):
-            with open(self.file, 'r') as file:
-                data = json.load(file)
-            for table_name in data:
-                new_table = self.table(table_name)
-                for id in data[table_name]:
-                    new_table.insert(data[table_name][id], id)
+            try:
+                with open(self.file, 'r') as file:
+                    data = json.load(file)
+            except json.JSONDecodeError:
+                raise JsonDbError(f"The JsonDb file {self.file} exists but seems to be corrupted.")
 
-    def show(self):
-        tables_count = len(self.tables)
-        display = '\n+'+'-'*54 + "+\n"
-        display += f"|*-- JsonDb --* file: {self.file} - tables: {tables_count:<13}|\n"
-        display += f"| {'Tables':40} | {'Item(s)':10}|\n"
-        display += '+'+'-'*54 + "+\n"
+            for collection_name in data:
+                new_collection = self.collection(collection_name)
+                for id in data[collection_name]:
+                    new_collection.insert(data[collection_name][id], id)
 
-        for table in self.tables:
-            item_count = len(self.tables[table].data)
-            display += f"| {table:40} | {item_count:10}|\n"
-        display += '+'+'-'*54 + "+\n"
+    def show(self) -> str:
+        width = self.width
+        collections_count = len(self.collections)
+        display = '\n+'+'-'*(width-2) + "+\n"
+        display += f"|*-- JsonDb --* file: {self.file} - collections: {collections_count:<13}\n"
+        display += f"| {'Collections':40} | {'Item(s)':10}\n"
+        display += '+'+'-'*(width-2) + "+\n"
+
+        for collection in self.collections:
+            item_count = len(self.collections[collection].data)
+            display += f"| {collection:40} | {item_count:10}\n"
+        display += '+'+'-'*(width-2) + "+\n"
         return display
 
-    def drop(self, table_name):
-        """Delete a table and all its items"""
-        if table_name in self.tables:
-            del self.tables[table_name]
+    def drop(self, collection_name) -> None:
+        """Delete a collection and all its items"""
+        if collection_name in self.collections:
+            del self.collections[collection_name]
             self._autosave()
 
 
-class Table:
+class Collection:
     """Collection of dictionnary objects"""
-    def __init__(self, name, db):
+    def __init__(self, name: str, db: JsonDb) -> None:
         self.database = db
         self.name = name
         self.data = {}
 
-    def __repr__(self):
-        return f"<{self.name} - objects in table: {len(self.data)} >"
+    def __repr__(self) -> str:
+        return f"<{self.name} - objects in collection: {len(self.data)} >"
 
-    def _autosave(self):
+    def _autosave(self) -> None:
         if self.database.is_autosaving:
             self.database.save()
 
-    def insert(self, input_data: dict, id=None):
-        """Add an item to the table"""
+    def insert(self, input_data: dict, id=None) -> dict:
+        """Add an item to the collection"""
         item = Item(input_data, self, id=id)
         self.data[item.id] = item
         self._autosave()
-        return item
+        return item.data
 
-    def update(self, input_data: dict, id=None):
-        """Update an item in the table"""
+    def update(self, input_data: dict, id=None) -> dict:
+        """Update an item in the collection"""
         if input_data.get("_id") is None:
             if id is None:
                 raise JsonDbError("The item must have an '_id' key")
@@ -149,10 +274,10 @@ class Table:
         item = Item(input_data, self, id=input_data["_id"])
         self.data[item.id] = item
         self._autosave()
-        return item
+        return item.data
 
-    def delete(self, input_data: dict, id=None):
-        """Delete an item from the table"""
+    def delete(self, input_data: dict, id=None) -> None:
+        """Delete an item from the collection"""
         if id is None:
             if input_data.get('_id') is None:
                 raise JsonDbError("The item must have an '_id' key")
@@ -160,55 +285,53 @@ class Table:
         del self.data[id]
         self._autosave()
 
-    def all(self):
-        """Returns all the items of the table"""
+    def all(self) -> list[Any]:
+        """Returns all the items of the collection"""
         return self.filter(lambda x: True)
 
-    def all_objects(self):
-        """Returns all the items of the table"""
-        return self.data
-
-    def show(self):
-        """Fancy representation of the table and its items
-        e.g.: print(Table.display())
+    def show(self) -> str:
+        """Fancy representation of the collection and its items
+        e.g.: print(Collection.show())
         """
-        display = '\n+'+'-'*55 + "+\n"
-        display += f"|*-- Table: {self.name} --* items: {len(self.data):<28}|\n"
+        width = self.database.width
+        display = '\n+'+'-'*(width-2) + "+\n"
+        display += f"|*-- Collection: {self.name} --*\n"
         for id in self.data:
-            display += f"| {id:<53} |\n"
-        display += f"|*-- Table: {self.name} --* items: {len(self.data):<28}|\n"
-        display += '+'+'-'*55 + "+\n"
+            display += f"| {id} \n"
+        display += f"| Total items: {len(self.data)}\n"
+        display += '+'+'-'*(width-2) + "+\n"
         return display
 
-    def first(self):
-        """Returns the first item of the table or None if the table is empty"""
+    def first(self) -> None | dict:
+        """Returns the first item of the collection or None if the collection is empty"""
         if len(self.data) == 0:
             return None
-        for id in self.data:
-            return self.data[id].data
+        for key in self.data:
+            return self.data[key].data
 
-    def first_object(self):
-        """Returns the first item of the table or None if the table is empty"""
+
+    def first_update(self, input_data: dict) -> dict | None:
         if len(self.data) == 0:
-            return None
-        for id in self.data:
-            return self.data[id]
+            new_data = self.insert(input_data)
+            return new_data
+        for key in self.data:
+            new_item = Item(input_data, self, id=key)
+            self.data[key] = new_item
+            self._autosave()
+            return self.data[key].data
 
-    def get(self, key: str):
+
+    def get(self, key: str) -> dict | None:
         """Get a unique item dict from its id"""
         if key in self.data:
             return self.data[key].data
 
-    def get_object(self, key: str):
-        """Get a unique item from its id"""
-        if key in self.data:
-            return self.data[key]
 
-    def filter(self, query_func=None):
+    def filter(self, query_func: Callable) -> list[dict]:
         """Takes one parameter function that returns a boolean value
-        example: queryset = Table.filter(lambda x: x['age'] > 18)
+        example: queryset = Collection.filter(lambda x: x['age'] > 18)
 
-        returns a dict of datas.
+        returns a list of datas.
         """
         queryset = []
         for id in self.data:
@@ -219,24 +342,10 @@ class Table:
                 continue
         return queryset
 
-    def filter_objects(self, query_func=None):
-        """Takes one parameter function that returns a boolean value
-        example: queryset = Table.filter_objects(lambda x: x['age'] > 18)
 
-        returns a list of Item objects.
-        """
-        queryset = []
-        for id in self.data:
-            try:
-                if query_func(self.data[id].data):
-                    queryset.append(self.data[id])
-            except KeyError:
-                continue
-        return queryset
-
-    def filter_delete(self, query_func=None):
+    def filter_delete(self, query_func: Callable) -> None:
         """Takes one parameter function that returns a boolean value
-        example: Table.query_delete(lambda x: x['age'] > 18)
+        example: Collection.query_delete(lambda x: x['age'] > 18)
         """
         to_delete = []
         for id in self.data:
@@ -248,77 +357,4 @@ class Table:
                 continue
         for item in to_delete:
             item.delete()
-        self._autosave()
-
-    def migrate(self, func, filter=None, rollback_on_error=False) -> MigrationReport:
-        """Takes one parameter function that returns a boolean value
-        example: Table.map(lambda x: x['age'] += 1)
-        """
-        # map(func, self.data)
-        errors = []
-        migrated = []
-        skipped = []
-
-        for id in self.data:
-            item = self.data[id]
-            if filter is None or filter(item.data):
-                try:
-                    func(item.data)
-                except KeyError:
-                    errors.append(item)
-                    continue
-                migrated.append(item.data.get("_id"))
-            else:
-                skipped.append(item)
-        if rollback_on_error and errors:
-            return MigrationReport(migrated, skipped, errors, done=False)
-        self._autosave()
-
-        return MigrationReport(migrated, skipped, errors, done=True)
-
-
-class Item:
-    def __init__(self, data, table, id=None):
-        if "_id" in data:
-            self.id = data["_id"]
-        self.id = id
-        if id is None:
-            self.id = str(uuid.uuid4())
-        self.table = table
-        self.data = data
-        self.data['_id'] = self.id
-
-    def __repr__(self):
-        return f"<Item - {self.data}>"
-
-    def _autosave(self):
-        if self.table.database.is_autosaving:
-            self.table.database.save()
-
-    def set(self, *args: tuple):
-        """args are tuples of (key, value)"""
-        for arg in args:
-            if not type(arg) is tuple:
-                raise JsonDbError('expected argument type is tuple')
-            self.data[arg[0]] = arg[1]
-        self._autosave()
-        return self
-
-    def del_attr(self, *args: str):
-        for arg in args:
-            if not type(arg) is str:
-                raise JsonDbError('expected argument type is str')
-            if arg in self.data:
-                del self.data[arg]
-                self._autosave()
-        return self
-
-    def update(self, data):
-        for key in data:
-            self.data[key] = data[key]
-        self._autosave()
-        return self
-
-    def delete(self):
-        del self.table.data[self.id]
         self._autosave()

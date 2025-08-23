@@ -37,17 +37,17 @@ class CustomFormatter(logging.Formatter):
         logging.CRITICAL: bold_red + prefix + reset + message
     }
 
-    def format(self, record):
+    def format(self, record) -> str:
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt, "%Y-%m-%d %H:%M:%S")
         return formatter.format(record)
 
 class Logger(logging.Logger):
-    def __init__(self, name :str=__name__, level: str="INFO"):
+    def __init__(self, name :str=__name__, level: str="INFO") -> None:
         super().__init__(name)
         self.console_handler = logging.StreamHandler()
         self.console_handler.setFormatter(CustomFormatter())
         self.addHandler(self.console_handler)
 
-    def setLevel(self, level):
+    def setLevel(self, level) -> None:
         super().setLevel(levels[level])
