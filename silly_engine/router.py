@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import sys
+from typing import Any
 
 WIDTH=80
 
@@ -54,16 +55,19 @@ class Router:
             self.add_route(route)
 
     def add_route(self, incoming_route: str | Subrouter | list) -> None:
+        # route is a string (comment)
         if isinstance(incoming_route, str):
             self._help.append("# " + incoming_route)
             return
+        # route is a subrouter
         if isinstance(incoming_route, Subrouter):
             self._help.append(f"@ {incoming_route.prefix:<50} -> {incoming_route.description}")
             self._subroutes[incoming_route.prefix] = incoming_route.router
             return
-        # route is a list:
+
+        # route is a list or a tuple:
         try:
-            assert isinstance(incoming_route, list)
+            assert isinstance(incoming_route, list) or isinstance(incoming_route, tuple)
         except AssertionError:
             raise RouterError("Route building: A route must be a list, a tuple, or a Subrouter")
 
@@ -115,7 +119,7 @@ class Router:
             self.__datas["building_paths"].append(path)
 
     @property
-    def help(self, **kwargs):
+    def help(self, **kwargs) -> str | Any:
         help = self.welcoming + "#" * (self.width - len(self.welcoming)) + "\n"
         for line in self._help:
             help += line + "\n"
@@ -173,8 +177,11 @@ class Router:
                         elif typing == "bool":
                             value = bool(int(value))
                     except ValueError:
-                        raise RouterError(f"Bad query: Value '{value}' for '{key}' is not the expected type '{typing}'")
-                kwargs[key] = value
+                        raise RouterError(f"Bad query: Value '{value}' for '{key}' is not the expected type '{typing}'", status=400)
+                    kwargs[key] = value
+                else:
+                    key = key.strip("<").strip(">").strip()
+                    kwargs[key] = value
             index += 1
         return kwargs
 
