@@ -46,7 +46,7 @@ def with_query(**kwargs):
     note that **kwargs is required to accept query params (it would be the same to accept a 'context')
     """
     print(kwargs)
-    Queries.insert(kwargs["query_params"])
+    Queries.insert(kwargs.get("query_params", {}))
     db.save()
 
 def infos():
@@ -79,19 +79,21 @@ def settings():
     print("--settings--")
 
 
+router = Router(name="test router")
+router.add_routes([
+    "test",
+    [["", "-h", "--help"], router.display_help, "display this help"],
+    ["query", with_query, "query_params test (e.g: query?foo=bar+oof=rab)"],
+    ["infos", infos, "infos about the database"],
+    ["person <name:str> <age:int>", person, "create a test object"],
+    ["list <collection_name:str>", list_collection, "list the items in the collection 'persons' or 'queries'"],
+    ["drop <collection_name:str>", drop_collection, "drop the collection 'persons' or 'queries'"],
+    ["person get <obj_id:str>", person_get, "get one Person from its _id"],
+    ["settings", settings, "get settings"],
+])
+
+
 if __name__ == "__main__":
-    router = Router(name="test router")
-    router.add_routes([
-        "test",
-        [["", "-h", "--help"], router.display_help, "display this help"],
-        ["query", with_query, "query_params test (e.g: query?foo=bar+oof=rab)"],
-        ["infos", infos, "infos about the database"],
-        ["person <name:str> <age:int>", person, "create a test object"],
-        ["list <collection_name:str>", list_collection, "list the items in the collection 'persons' or 'queries'"],
-        ["drop <collection_name:str>", drop_collection, "drop the collection 'persons' or 'queries'"],
-        ["person get <obj_id:str>", person_get, "get one Person from its _id"],
-        ["settings", settings, "get settings"],
-    ])
     try:
         router.query()
     except RouterError as e:
