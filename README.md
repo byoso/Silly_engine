@@ -1,5 +1,7 @@
 # Silly Engine
 
+expected compatibility: python3.10+
+
 ![image](silly_engine.png)
 
 The Silly Engine is a bunch of easy-to-handle tools to create quickly python terminal interfaces, nothing too fancy, considering this:

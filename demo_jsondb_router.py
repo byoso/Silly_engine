@@ -14,7 +14,7 @@ from datetime import datetime
 from silly_engine.router import Router, RouterError
 from silly_engine.jsondb import JsonDb, Collection
 from silly_engine.minuit import AutoArray
-from migrations import mig_1_0_0, mig_2_0_0
+from demo_migrations import mig_1_0_0, mig_2_0_0
 
 @dataclass
 class Person:
