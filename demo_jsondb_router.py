@@ -16,6 +16,9 @@ from silly_engine.jsondb import JsonDb, Collection
 from silly_engine.minuit import AutoArray
 from demo_migrations import mig_1_0_0, mig_2_0_0
 
+WIDTH = 120
+
+
 @dataclass
 class Person:
     name : str
@@ -30,7 +33,7 @@ db: JsonDb = JsonDb("data.json", autosave=True, version="0.0.0", migrations={
     # play with the migrations: change the db version to see how it goes
     "1.0.0": mig_1_0_0,
     "2.0.0": mig_2_0_0,
-})
+}, width=WIDTH)
 # the reserved collection '_settings' is meant to be used with the migrations,
 # it is to be used as a singleton (use .first(), .first_update(<data>))
 # if you want to add other infos than 'version' but keep 'version' in !
@@ -69,7 +72,7 @@ def list_collection(collection_name):
         exclusion = ["time"]
     else:
         exclusion = ["_id"]
-    print(AutoArray(collection.all(), exclude=exclusion))
+    print(AutoArray(collection.all(), exclude=exclusion, width=WIDTH))
 
 def drop_collection(collection_name):
     db.drop(collection_name)
@@ -79,7 +82,7 @@ def settings():
     print("--settings--")
 
 
-router = Router(name="test router")
+router = Router(name="test router", width=WIDTH)
 router.add_routes([
     "test",
     [["", "-h", "--help"], router.display_help, "display this help"],

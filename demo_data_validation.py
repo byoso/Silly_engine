@@ -21,7 +21,7 @@ class Truc(ValidatedDataClass):
 # nominal case
 data = {"foo": "toto", "bar": 12, "truc": "un truc", "enable": 0, "a_list": [1, 2, 3], "data": {"a": 1, "b": 2}}
 truc = Truc(data)
-print(truc)
+print("truc: \n", truc)
 
 # error case typing
 try:
