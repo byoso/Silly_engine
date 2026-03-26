@@ -2,6 +2,7 @@
 
 from silly_engine import DataValidationError, ValidatedDataClass
 from dataclasses import dataclass, field
+from typing import List, Dict
 
 """Simple test cases and examples for ValidatedDataClass"""
 
@@ -10,8 +11,8 @@ class Truc(ValidatedDataClass):
     foo: str = ""
     bar: int = 0
     enable: bool = False
-    a_list: list[int] = field(default_factory=list)
-    data: dict[str, int] = field(default_factory=dict)
+    a_list: List[int] = field(default_factory=list)
+    data: Dict[str, int] = field(default_factory=dict)
 
     def _validate(self) -> None:
         if len(self.a_list) > 3:
