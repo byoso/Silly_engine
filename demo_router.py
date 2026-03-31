@@ -2,7 +2,7 @@
 
 from pprint import pprint
 
-from silly_engine.router import Router, RouterError
+from silly_engine.core.router import Router, RouterError
 
 
 def demo(data=None, *args, **kwargs):

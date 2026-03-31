@@ -11,9 +11,9 @@ each writting transaction.
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
-from silly_engine.router import Router, RouterError
-from silly_engine.jsondb import JsonDb, Collection
-from silly_engine.minuit import AutoArray
+from silly_engine.core.router import Router, RouterError
+from silly_engine.core.jsondb import JsonDb, Collection
+from silly_engine.core.minuit import AutoArray
 from demo_migrations import mig_1_0_0, mig_2_0_0
 
 WIDTH = 120

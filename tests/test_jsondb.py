@@ -1,7 +1,7 @@
 import json
 import os
 
-from silly_engine.jsondb import Version, JsonDb
+from silly_engine.core.jsondb import Version, JsonDb
 
 
 def test_version_parsing_and_comparison():

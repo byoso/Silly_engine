@@ -1,4 +1,4 @@
-from silly_engine.minuit import TextField, MenuItem, AutoArray, FieldError
+from silly_engine.core.minuit import TextField, MenuItem, AutoArray, FieldError
 
 
 def test_textfield_builds_display():
@@ -27,6 +27,6 @@ def test_autoarray_and_get():
 
 
 def test_listfield_invalid_choices_raises():
-    from silly_engine.minuit import ListField
+    from silly_engine.core.minuit import ListField
     with __import__('pytest').raises(FieldError):
         ListField('name', choices=[(1, 2, 3)])

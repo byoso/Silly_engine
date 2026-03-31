@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import pytest
 
-from silly_engine.data_validation import _check_generic, ValidatedDataClass, DataValidationError
+from silly_engine.core.data_validation import _check_generic, ValidatedDataClass, DataValidationError
 from typing import List, Dict, Any
 
 

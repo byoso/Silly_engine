@@ -8,7 +8,7 @@ print(f"{c.info}This is an info message{c.end}")
 """
 
 
-from .ascii_map_01 import abc_map_01 as abc_map
+from .components.ascii_map_01 import abc_map_01 as abc_map
 
 
 
