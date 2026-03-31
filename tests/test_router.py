@@ -1,4 +1,4 @@
-from silly_engine.core.router import text_chunks, _formatting_incoming_route_width, Router
+from silly_engine.router import text_chunks, _formatting_incoming_route_width, Router
 
 
 def test_text_chunks():

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-from silly_engine import DataValidationError, ValidatedDataClass
+from silly_engine import DataValidationError, ValidatedDataClass, ValidatedWithId
 from dataclasses import dataclass, field
 from typing import List, Dict
 
@@ -43,3 +43,12 @@ except DataValidationError as e:
 # default case
 truc = Truc(**{})
 print("- Default case -> truc: \n", truc)
+
+@dataclass
+class Machin(ValidatedWithId):
+    name: str = ""
+    age: int = 0
+
+machin = Machin(name="machin", age=30)
+
+print("- Machin with id -> machin: \n", machin)

@@ -11,10 +11,10 @@ each writting transaction.
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
-from silly_engine.core.router import Router, RouterError
-from silly_engine.core.jsondb import JsonDb, Collection
-from silly_engine.core.minuit import AutoArray
-from demo_migrations import mig_1_0_0, mig_2_0_0
+from silly_engine.router import Router, RouterError
+from silly_engine.jsondb import JsonDb, Collection
+from silly_engine.minuit import AutoArray
+from demo_migrations_jsondb import mig_1_0_0, mig_2_0_0
 
 WIDTH = 120
 
@@ -63,7 +63,8 @@ def person_get(obj_id: str):
 
 def person(name, age):
     person = Person(name=name, age=age)
-    Persons.insert(asdict(person))
+    person = Persons.insert(asdict(person))
+    print(person)
     db.save()
 
 def list_collection(collection_name):
@@ -72,7 +73,7 @@ def list_collection(collection_name):
         exclusion = ["time"]
     else:
         exclusion = ["_id"]
-    print(AutoArray(collection.all(), exclude=exclusion, width=WIDTH))
+    print(AutoArray([item.data for item in collection.all()], exclude=exclusion, width=WIDTH))
 
 def drop_collection(collection_name):
     db.drop(collection_name)

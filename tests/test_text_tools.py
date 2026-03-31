@@ -1,4 +1,4 @@
-from silly_engine.core.text_tools import Title, Color
+from silly_engine.text_tools import Title, Color
 
 
 def test_title_builds_and_string():

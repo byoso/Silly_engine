@@ -10,7 +10,7 @@ The Silly Engine is a bunch of easy-to-handle tools to create quickly python ter
 - keep it light
 - no tier library import ! all included.
 
-**The demos included in this repo are the documentation.**
+**The demos and tests included in this repo ARE the documentation.**
 
 ## Includes
 
@@ -22,6 +22,8 @@ The Silly Engine is a bunch of easy-to-handle tools to create quickly python ter
 - **ascii_map_01.py**: you could create your own, if so 2 rules:
   - create at least a character for "space"
   - all your letters must have the same number of lines.
+- **data_validation**: pre configured dataclasses, can be usefull for jsondb or silly_db
+- **silly_db**: a complete but simple ORM for sqlite3 files, suitable for local projects.
 
 ## Expected use
 

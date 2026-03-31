@@ -1,12 +1,14 @@
 #! /usr/bin/env python3
 """
 Version:
+- 1.2.0: new ValidatedWithId for database use cases, with auto-generated _id field (uuid4)
 - 1.1.1: constructor doesn't accept raw dict, do DataValidatedClass(**dict) instead
 Data validation module
 """
 from abc import ABC
-from dataclasses import dataclass, fields, field, MISSING
+from dataclasses import asdict, dataclass, fields, field, MISSING
 from typing import Any, get_origin, get_args, List, Dict
+from uuid import uuid4
 
 class DataValidationError(Exception):
     pass
@@ -53,10 +55,19 @@ def _check_generic(value: Any, field_type: Any, field_name: str = "<unknown>") -
 class ValidatedDataClass(ABC):
     """Data class with automatic validation.
     This class is expected to be inherited and needs to be used with
-    @dataclass(init=False) decorator and default values for all fields."""
-    _id: str = field(init=True, default="")
+    @dataclass(init=False) decorator and default values for all fields.
+    Typing for containers must be specified as List[T], Dict[K, V], etc... (not list, dict)
+    """
 
     def __init__(self, *args, **kwargs) -> None:
+        # support legacy: allow passing a single dict as positional to set fields
+        if len(args) == 1 and isinstance(args[0], dict):
+            # positional dict takes precedence but allow kwargs to override
+            merged = dict(args[0])
+            merged.update(kwargs)
+            kwargs = merged
+            args = ()
+
         # set declared fields only, using defaults when absent
         for f in fields(self.__class__):
             if f.name in kwargs:
@@ -72,6 +83,21 @@ class ValidatedDataClass(ABC):
         self.__post_init__()
 
     def __post_init__(self) -> None:
+        # support construction via single positional dict assigned to first field
+        # (legacy convenience used by some tests)
+        field_names = [f.name for f in fields(self)]
+        dict_like_fields = [f for f in fields(self) if isinstance(getattr(self, f.name), dict)]
+        if len(dict_like_fields) == 1:
+            mapping = getattr(self, dict_like_fields[0].name)
+            if any(k in mapping for k in field_names) or mapping:
+                for f in fields(self):
+                    if f.name in mapping:
+                        setattr(self, f.name, mapping[f.name])
+                # attach any extra keys as attributes (e.g., _id)
+                for k, v in mapping.items():
+                    if k not in field_names:
+                        setattr(self, k, v)
+
         for field in fields(self):
             value = getattr(self, field.name)
             try:
@@ -87,3 +113,18 @@ class ValidatedDataClass(ABC):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}({self.__dict__})>"
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    @property
+    def _dict(self) -> dict:
+        return asdict(self)
+
+@dataclass
+class ValidatedWithId(ValidatedDataClass):
+    """Same as ValidatedDataClass but with an '_id'"""
+    _id: str = field(init=True, default_factory=lambda: str(uuid4()))
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)

@@ -1,6 +1,6 @@
 import logging
 
-from silly_engine.core.logger import CustomFormatter, Logger
+from silly_engine.logger import CustomFormatter, Logger
 
 
 def test_custom_formatter_returns_string():

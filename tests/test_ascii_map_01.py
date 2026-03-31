@@ -1,4 +1,4 @@
-from silly_engine.core.components import ascii_map_01
+from silly_engine.components import ascii_map_01
 
 
 def test_abc_map_has_letters_and_numbers():
