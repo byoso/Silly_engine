@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 """
 Version:
-- 1.1.0: constructor doesn't accept raw dict, do DataValidatedClass(**dict) instead
+- 1.1.1: constructor doesn't accept raw dict, do DataValidatedClass(**dict) instead
 Data validation module
 """
 from abc import ABC
@@ -53,7 +53,7 @@ def _check_generic(value: Any, field_type: Any, field_name: str = "<unknown>") -
 class ValidatedDataClass(ABC):
     """Data class with automatic validation.
     This class is expected to be inherited and needs to be used with
-    @dataclass decorator and default values for all fields."""
+    @dataclass(init=False) decorator and default values for all fields."""
     _id: str = field(init=True, default="")
 
     def __init__(self, *args, **kwargs) -> None:
@@ -63,6 +63,8 @@ class ValidatedDataClass(ABC):
                 val = kwargs.pop(f.name)
             elif f.default is not MISSING:
                 val = f.default
+            elif getattr(f, "default_factory", MISSING) is not MISSING:
+                val = f.default_factory()  # type: ignore
             else:
                 val = None
             setattr(self, f.name, val)

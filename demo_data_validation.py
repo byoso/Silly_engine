@@ -6,7 +6,7 @@ from typing import List, Dict
 
 """Simple test cases and examples for ValidatedDataClass"""
 
-@dataclass
+@dataclass(init=False)
 class Truc(ValidatedDataClass):
     foo: str = ""
     bar: int = 0
@@ -21,25 +21,25 @@ class Truc(ValidatedDataClass):
 
 # nominal case
 data = {"foo": "toto", "bar": 12, "truc": "un truc", "enable": 0, "a_list": [1, 2, 3], "data": {"a": 1, "b": 2}}
-truc = Truc(data)
-print("truc: \n", truc)
+truc = Truc(**data)
+print("- Nominal case -> truc: \n", truc)
 
 # error case typing
 try:
     data = {"foo": "toto", "bar": 12, "truc": "un truc", "enable": True, "a_list": [1, 2, 3], "data": {0: 1, "b": 2}}
-    truc = Truc(data)
-    print(truc)
+    truc = Truc(**data)
 except DataValidationError as e:
+    print("- Error case typing -> truc:")
     print(f"Validation error: {e}")
 
 # error case _validate
 try:
     data = {"foo": "toto", "bar": 12, "truc": "un truc", "enable": True, "a_list": [1, 2, 3, 4], "data": {"a": 1, "b": 2}}
-    truc = Truc(data)
-    print(truc)
+    truc = Truc(**data)
 except DataValidationError as e:
+    print("- Error case _validate -> truc:")
     print(f"Validation error: {e}")
 
 # default case
-truc = Truc({})
-print(truc)
+truc = Truc(**{})
+print("- Default case -> truc: \n", truc)
