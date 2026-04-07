@@ -22,9 +22,14 @@ The Silly Engine is a bunch of easy-to-handle tools to create quickly python ter
 - **ascii_map_01.py**: you could create your own, if so 2 rules:
   - create at least a character for "space"
   - all your letters must have the same number of lines.
-- **data_validation**: pre configured dataclasses, can be usefull for jsondb or silly_db
-- **silly_db**: a complete but simple ORM for sqlite3 files, suitable for local projects.
+- **data_validation**: pre configured dataclasses, can be usefull for jsondb or silly_orm
+- **silly_orm**: a complete but simple SQL ORM for sqlite3 files, suitable for local projects.
 
 ## Expected use
 
 Copy/paste the Silly Engine in your porject. Then use it, the code is simple enought to be modified it if you want to. Fork it, customize it, make it yours, or just use it as it comes, and feel free to give some feedback. Enjoy :)
+
+
+## Documentation
+
+[Silly Engin Documentation](documentation/Silly_engine_index.md)
