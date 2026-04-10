@@ -125,7 +125,17 @@ print(page.page_size)         # Items per page
 print(page.total)             # Total matching records
 
 # Get next page
-page2 = Knights.filter(age__gt=30).paginate(page_size=10, page=2)
+page2: Pagination = Knights.filter(age__gt=30).paginate(page_size=10, page=2)
+```
+paginate returns a Pagination object:
+```python
+class Pagination:
+    """Pagination result object."""
+    data: List[Any]  # list of QItem objects
+    page: int
+    page_size: int
+    total: int
+    ...
 ```
 
 ## Count
