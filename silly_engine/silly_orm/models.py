@@ -71,3 +71,15 @@ class Model:
                 aliases.setdefault(name[:-4], name)
 
         return aliases
+
+    @classmethod
+    def validate(cls, payload: dict, operation: str = "insert", record_id: str | None = None):
+        """
+        Validation hook called before insert/update or whatever action.
+        Override in user models and raise an exception to reject a payload.
+        """
+        if operation == "insert":
+            pass
+        elif operation == "update":
+            pass
+        return None

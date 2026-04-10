@@ -29,9 +29,9 @@ In short: you write Python objects, `Silly_ORM` handles SQL and relation wiring 
 
 ```python
 from dataclasses import dataclass
-from silly_orm.db import SillyDb
-from silly_orm.models import Model
-from silly_orm.relations.oto import Oto
+from silly_engine.silly_orm.db import SillyDb
+from silly_engine.silly_orm.models import Model
+from silly_engine.silly_orm.relations import Oto
 
 # declare your models
 @dataclass

@@ -5,7 +5,7 @@
 Use `db.transaction()` for atomic blocks.
 
 ```python
-from silly_orm.tools import SillyDbError
+from silly_engine.silly_orm.tools import SillyDbError
 
 
 try:

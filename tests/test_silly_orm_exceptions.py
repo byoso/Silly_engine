@@ -20,6 +20,17 @@ class Princess(Model):
     suitors_ids: Mtm | None = Mtm("knights")
 
 
+@dataclass
+class GuardedKnight(Model):
+    name: str
+    age: int
+
+    @classmethod
+    def validate(cls, payload: dict, operation: str = "insert", record_id: str | None = None):
+        if payload.get("age") is not None and payload["age"] < 0:
+            raise SillyDbError("age must be >= 0")
+
+
 def test_table_requires_model_raises_silly_db_error():
     db = SillyDb(":memory:")
     with pytest.raises(SillyDbError):
@@ -41,6 +52,28 @@ def test_unknown_relation_filter_raises_silly_db_error():
 
     with pytest.raises(SillyDbError):
         knights.filter(unknown_rel__name="x").all()
+
+
+def test_model_validate_hook_blocks_invalid_insert():
+    db = SillyDb(":memory:")
+    knights = db.table("guarded_knights", GuardedKnight)
+
+    with pytest.raises(SillyDbError, match="age must be >= 0"):
+        knights.insert({"_id": "k1", "name": "Arthur", "age": -1})
+
+    assert knights.count() == 0
+
+
+def test_model_validate_hook_blocks_invalid_update():
+    db = SillyDb(":memory:")
+    knights = db.table("guarded_knights", GuardedKnight)
+
+    knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
+
+    with pytest.raises(SillyDbError, match="age must be >= 0"):
+        knights.update("k1", age=-2)
+
+    assert knights.get(_id="k1").obj.age == 40
 
 
 def test_failed_migration_raises_silly_db_error_and_rolls_back_version(capsys):

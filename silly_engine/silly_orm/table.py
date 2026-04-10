@@ -275,6 +275,10 @@ class Table:
             if '_expires_at' not in payload:
                 payload['_expires_at'] = now_ts + meta.ttl
 
+    def _run_model_validation(self, payload: dict, operation: str, record_id: str | None = None):
+        """Run optional model validation hook before writing to DB."""
+        self.model.validate(dict(payload), operation=operation, record_id=record_id)
+
     def insert(self, data: dict):
         try:
             payload = dict(data)
@@ -290,6 +294,9 @@ class Table:
 
             # Apply Meta fields (defaults, timestamps, ttl)
             self._apply_meta_fields(payload, is_insert=True)
+
+            validation_payload = {**payload, **mtm_payload}
+            self._run_model_validation(validation_payload, operation="insert")
 
             if not payload:
                 raise SillyDbError("insert payload cannot be empty")
@@ -326,6 +333,9 @@ class Table:
 
             # Apply Meta fields (timestamps, ttl)
             self._apply_meta_fields(payload, is_insert=False)
+
+            validation_payload = {**payload, **mtm_payload}
+            self._run_model_validation(validation_payload, operation="update", record_id=_id)
 
             if payload:
                 assignments = ", ".join(f"{k}=?" for k in payload.keys())

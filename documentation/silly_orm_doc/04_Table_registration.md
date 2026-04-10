@@ -5,7 +5,7 @@
 Register each model with `db.table(table_name, ModelClass)`.
 
 ```python
-from silly_orm.db import SillyDb
+from silly_engine.silly_orm.db import SillyDb
 from app.db.models import Knight
 
 
