@@ -19,8 +19,8 @@ def test_simple_filter_order_and_limit(orm_tables):
 
     rows = knights.filter(age__gt=35).order_by("-age").limit(2).all()
 
-    assert [row.obj.name for row in rows] == ["Gawain", "Arthur"]
-    assert knights.filter(name="Lancelot").first().obj.age == 35
+    assert [row.q.name for row in rows] == ["Gawain", "Arthur"]
+    assert knights.filter(name="Lancelot").first().q.age == 35
 
 
 def test_update_scalar_fields(orm_tables):
@@ -30,8 +30,8 @@ def test_update_scalar_fields(orm_tables):
     knights.update("k1", age=41, name="Arthur Pendragon")
 
     knight = knights.get(_id="k1")
-    assert knight.obj.name == "Arthur Pendragon"
-    assert knight.obj.age == 41
+    assert knight.q.name == "Arthur Pendragon"
+    assert knight.q.age == 41
 
 
 def test_query_iter_equals_all(orm_tables):
@@ -59,7 +59,7 @@ def test_bulk_update_with_filter_chain(orm_tables):
 
     assert affected == 2
     assert knights.filter(name="Veteran").count() == 2
-    assert knights.get(_id="k3").obj.name == "Perceval"
+    assert knights.get(_id="k3").q.name == "Perceval"
 
 
 def test_bulk_update_apply_alias(orm_tables):
@@ -73,7 +73,7 @@ def test_bulk_update_apply_alias(orm_tables):
 
     assert affected == 2
     assert knights.filter(name="Senior").count() == 2
-    assert knights.get(_id="k3").obj.name == "Perceval"
+    assert knights.get(_id="k3").q.name == "Perceval"
 
 
 def test_bulk_delete_with_relational_filter_chain(orm_tables):

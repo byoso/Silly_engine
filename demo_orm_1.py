@@ -116,10 +116,10 @@ CourtedPrincesses.insert({"_id": "p3", "name": "Isolde", "age": 24})
 CourtedPrincesses.insert({"_id": "p4", "name": "Nimue", "age": 19})
 CourtedPrincesses.insert({"_id": "p5", "name": "Morgause", "age": 27})
 
-print("created knights:", [item.obj.name for item in Knights.filter().all()])
-print("created swords:", [item.obj.name for item in Swords.filter().all()])
-print("created dragons:", [item.obj.name for item in DeadDragons.filter().all()])
-print("created princesses:", [item.obj.name for item in CourtedPrincesses.filter().all()])
+print("created knights:", [item.q.name for item in Knights.filter().all()])
+print("created swords:", [item.q.name for item in Swords.filter().all()])
+print("created dragons:", [item.q.name for item in DeadDragons.filter().all()])
+print("created princesses:", [item.q.name for item in CourtedPrincesses.filter().all()])
 
 print("\n=== Read ===")
 
@@ -127,9 +127,9 @@ arthur = Knights.get(_id="k1")
 young_knights = Knights.filter(age__lt=35).order_by("age").all()
 lancelot = Knights.get(name="Lancelot")
 
-print("get(_id='k1') ->", arthur.obj.name, arthur.obj.age)
-print("get(name='Lancelot') ->", lancelot.obj.name, lancelot.obj.age)
-print("filter(age__lt=35) ->", [item.obj.name for item in young_knights])
+print("get(_id='k1') ->", arthur.q.name, arthur.q.age)
+print("get(name='Lancelot') ->", lancelot.q.name, lancelot.q.age)
+print("filter(age__lt=35) ->", [item.q.name for item in young_knights])
 
 print("\n=== Update ===")
 
@@ -141,33 +141,33 @@ galahad = Knights.get(_id="k4")
 lancelot = Knights.get(_id="k2")
 percival = Knights.get(_id="k5")
 
-print("updated Galahad sword ->", galahad.obj.sword.obj.name)
-print("updated Lancelot age ->", lancelot.obj.age)
-print("updated Lancelot princesses ->", [p.obj.name for p in lancelot.obj.courted_princesses])
-print("created without relation, then linked ->", percival.obj.name, [p.obj.name for p in percival.obj.courted_princesses])
+print("updated Galahad sword ->", galahad.q.sword.q.name)
+print("updated Lancelot age ->", lancelot.q.age)
+print("updated Lancelot princesses ->", [p.q.name for p in lancelot.q.courted_princesses])
+print("created without relation, then linked ->", percival.q.name, [p.q.name for p in percival.q.courted_princesses])
 
 print("\n=== Delete ===")
 
-print("before delete, Galahad princesses ->", [p.obj.name for p in galahad.obj.courted_princesses])
+print("before delete, Galahad princesses ->", [p.q.name for p in galahad.q.courted_princesses])
 CourtedPrincesses.delete_by_id("p4")
 galahad = Knights.get(_id="k4")
 
 print("after delete, princess p4 exists ->", CourtedPrincesses.get(_id="p4"))
-print("after delete, Galahad princesses ->", [p.obj.name for p in galahad.obj.courted_princesses])
+print("after delete, Galahad princesses ->", [p.q.name for p in galahad.q.courted_princesses])
 
 print("\n=== Relation Queries ===")
 
 for k in Knights.filter(sword__name="Excalibur").all():
-    print("Oto query:", k.obj.name, "has sword", k.obj.sword.obj.name)
+    print("Oto query:", k.q.name, "has sword", k.q.sword.q.name)
 
 for k in Knights.filter(dragons_killed__name="Smaug").all():
-    print("Otm query:", k.obj.name, "killed dragon Smaug")
+    print("Otm query:", k.q.name, "killed dragon Smaug")
 
 for d in DeadDragons.filter(killed_by__name="Lancelot").all():
-    print("Mto query:", d.obj.name, "was killed by", d.obj.killed_by.obj.name)
+    print("Mto query:", d.q.name, "was killed by", d.q.killed_by.q.name)
 
 for k in Knights.filter(courted_princesses__age__gt=18).all():
-    print("Mtm query:", k.obj.name, "courted", [p.obj.name for p in k.obj.courted_princesses])
+    print("Mtm query:", k.q.name, "courted", [p.q.name for p in k.q.courted_princesses])
 
 print("\n=== Object Navigation Examples ===")
 
@@ -177,30 +177,30 @@ smaug = DeadDragons.get(_id="d1")
 isolde = CourtedPrincesses.get(_id="p3")
 
 print("Oto from Knight -> Sword:")
-print(arthur.obj.name, "uses", arthur.obj.sword.obj.name)
+print(arthur.q.name, "uses", arthur.q.sword.q.name)
 
 print("Oto from Sword -> Knight:")
-print(durandal.obj.name, "belongs to", durandal.obj.owner.obj.name)
+print(durandal.q.name, "belongs to", durandal.q.owner.q.name)
 
 print("Otm from Knight -> DeadDragons:")
-print(gawain.obj.name, "killed", [dragon.obj.name for dragon in gawain.obj.dragons_killed])
+print(gawain.q.name, "killed", [dragon.q.name for dragon in gawain.q.dragons_killed])
 
 print("Mto from DeadDragon -> Knight:")
-print(smaug.obj.name, "was killed by", smaug.obj.killed_by.obj.name)
+print(smaug.q.name, "was killed by", smaug.q.killed_by.q.name)
 
 print("Mtm from Knight -> CourtedPrincesses:")
-print(gawain.obj.name, "courted", [princess.obj.name for princess in gawain.obj.courted_princesses])
+print(gawain.q.name, "courted", [princess.q.name for princess in gawain.q.courted_princesses])
 
 print("Mtm from CourtedPrincess -> Knights:")
-print(isolde.obj.name, "has suitors", [knight.obj.name for knight in isolde.obj.suitors])
+print(isolde.q.name, "has suitors", [knight.q.name for knight in isolde.q.suitors])
 
 print("\nMutable relation helpers (add/remove):")
-gawain.obj.add("courted_princesses", isolde)
-print("after add,", gawain.obj.name, "courted", [princess.obj.name for princess in gawain.obj.courted_princesses])
-gawain.obj.remove("courted_princesses", isolde)
-print("after remove,", gawain.obj.name, "courted", [princess.obj.name for princess in gawain.obj.courted_princesses])
+gawain.q.add("courted_princesses", isolde)
+print("after add,", gawain.q.name, "courted", [princess.q.name for princess in gawain.q.courted_princesses])
+gawain.q.remove("courted_princesses", isolde)
+print("after remove,", gawain.q.name, "courted", [princess.q.name for princess in gawain.q.courted_princesses])
 
-gawain.obj.relation("courted_princesses").add("p3")
-print("fluent add via relation(...):", [princess.obj.name for princess in gawain.obj.courted_princesses])
-gawain.obj.relation("courted_princesses").remove("p3")
-print("fluent remove via relation(...):", [princess.obj.name for princess in gawain.obj.courted_princesses])
+gawain.q.relation("courted_princesses").add("p3")
+print("fluent add via relation(...):", [princess.q.name for princess in gawain.q.courted_princesses])
+gawain.q.relation("courted_princesses").remove("p3")
+print("fluent remove via relation(...):", [princess.q.name for princess in gawain.q.courted_princesses])

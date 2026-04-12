@@ -41,7 +41,7 @@ def test_migrate_applies_helper_based_schema_changes_and_updates_version():
 
     settings = db.table("_settings").first()
     assert settings is not None
-    assert settings.obj.version == "1.2.0"
+    assert settings.q.version == "1.2.0"
 
 
 
@@ -74,7 +74,7 @@ def test_migrate_does_not_reapply_same_versions():
 
     settings = db.table("_settings").first()
     assert settings is not None
-    assert settings.obj.version == "1.1.0"
+    assert settings.q.version == "1.1.0"
 
 
 
@@ -92,7 +92,7 @@ def test_migrate_rename_table_with_safe_helper():
 
     settings = db.table("_settings").first()
     assert settings is not None
-    assert settings.obj.version == "2.0.0"
+    assert settings.q.version == "2.0.0"
 
 
 def test_migrate_failed_helper_migration_does_not_advance_db_version():
@@ -111,4 +111,4 @@ def test_migrate_failed_helper_migration_does_not_advance_db_version():
 
     settings = db.table("_settings").first()
     assert settings is not None
-    assert settings.obj.version == "0.0.0"
+    assert settings.q.version == "0.0.0"

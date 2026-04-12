@@ -33,7 +33,7 @@ young = Knights.filter(age__lt=35).all()
 
 # Or iterate directly (no .all() needed)
 for knight in Knights.filter(age__lt=35):
-    print(knight.obj.name)
+    print(knight.q.name)
 
 # Or convert to list
 young = list(Knights.filter(age__lt=35))
@@ -79,10 +79,10 @@ smaug_slayer = Dragons.filter(killer__name="Lancelot")
 
 ```python
 # Update by ID
-knights_table.update(arthur.obj._id, age=41)
+knights_table.update(arthur.q._id, age=41)
 
 # Pass multiple fields
-Knights.update(arthur.obj._id, age=41, name="King Arthur")
+Knights.update(arthur.q._id, age=41, name="King Arthur")
 
 # Bulk update with filter chain
 affected = Knights.update(name="Veteran").filter(age__gte=35).execute()
@@ -95,7 +95,7 @@ print(affected)  # number of updated rows
 
 ```python
 # Delete by ID
-Knights.delete_by_id(arthur.obj._id)
+Knights.delete_by_id(arthur.q._id)
 
 # Or pass QItem directly
 Knights.delete(arthur)  # uses arthur._data["_id"]
@@ -118,7 +118,7 @@ page = Knights.filter(age__gt=30).paginate(page_size=10, page=1)
 
 # Access results and metadata
 for knight in page.data:      # page.data contains QItems
-    print(knight.obj.name)
+    print(knight.q.name)
 
 print(page.page)              # Current page (1-indexed)
 print(page.page_size)         # Items per page

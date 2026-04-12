@@ -11,7 +11,7 @@ class QItem:
         self._accessor = Accessor(self._model, self._data, self._db)
 
     @property
-    def obj(self):
+    def q(self):
         return self._accessor
 
     def __repr__(self):

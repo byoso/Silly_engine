@@ -8,7 +8,7 @@ def main() -> None:
 
     # Example ORM usage
     Knights.insert({"name": "Arthur", "age": 40})
-    print([item.obj.name for item in Knights.filter().all()])
+    print([item.q.name for item in Knights.filter().all()])
 
 
 if __name__ == "__main__":

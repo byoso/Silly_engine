@@ -239,7 +239,7 @@ class SillyDb:
     def migrate(self, migrations: list[tuple[str, Callable[["SillyDb"], None]]]):
         for migration in migrations:
             db_settings = self._tables["_settings"].first()
-            db_version = db_settings.obj.version
+            db_version = db_settings.q.version
             migration_version = migration[0]
             if _is_migration_applicable(db_version, migration_version):
                 try:
@@ -248,7 +248,7 @@ class SillyDb:
                         db_settings = self._tables["_settings"].first()
                         if db_settings is None:
                             raise SillyDbError("Missing _settings row while updating migration version")
-                        self._tables["_settings"].update(db_settings.obj._id, version=migration_version)
+                        self._tables["_settings"].update(db_settings.q._id, version=migration_version)
                 except Exception as e:
                     if _is_connector_module(self.connector, ".connectors.sqlite"):
                         _emit_migration_rollback_warning(migration_version, e)

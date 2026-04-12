@@ -58,8 +58,8 @@ swords.insert({"_id": "s1", "name": "Excalibur", "length": 120})
 knight = knights.get(_id="k1")
 sword = swords.get(_id="s1")
 
-print(knight.obj.sword.obj.name)   # Excalibur
-print(sword.obj.owner.obj.name)    # Arthur
+print(knight.q.sword.q.name)   # Excalibur
+print(sword.q.owner.q.name)    # Arthur
 ```
 
 Reverse assignment is also resolved:
@@ -68,7 +68,7 @@ Reverse assignment is also resolved:
 knights.insert({"_id": "k2", "name": "Lancelot", "age": 35})
 swords.insert({"_id": "s2", "name": "Durandal", "length": 110, "owner_id": "k2"})
 
-print(knights.get(_id="k2").obj.sword.obj.name)  # Durandal
+print(knights.get(_id="k2").q.sword.q.name)  # Durandal
 ```
 
 Updating an Oto link keeps uniqueness by clearing the previous owner side.
@@ -82,7 +82,7 @@ knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
 dragons.insert({"_id": "d1", "name": "Smaug", "age": 300, "killer_id": "k1"})
 
 dragon = dragons.get(_id="d1")
-print(dragon.obj.killer.obj.name)  # Arthur
+print(dragon.q.killer.q.name)  # Arthur
 ```
 
 ## Otm (one-to-many)
@@ -95,7 +95,7 @@ dragons.insert({"_id": "d1", "name": "Smaug", "age": 300, "killer_id": "k1"})
 dragons.insert({"_id": "d2", "name": "Fafnir", "age": 150, "killer_id": "k1"})
 
 arthur = knights.get(_id="k1")
-print([d.obj.name for d in arthur.obj.dragons_killed])  # ["Smaug", "Fafnir"]
+print([d.q.name for d in arthur.q.dragons_killed])  # ["Smaug", "Fafnir"]
 ```
 
 Important: `Otm` is computed from the opposite `Mto` side.
@@ -118,10 +118,10 @@ knights.insert({
 })
 
 arthur = knights.get(_id="k1")
-print([p.obj.name for p in arthur.obj.courted_princesses])
+print([p.q.name for p in arthur.q.courted_princesses])
 
 guenievre = princesses.get(_id="p1")
-print([k.obj.name for k in guenievre.obj.suitors])
+print([k.q.name for k in guenievre.q.suitors])
 ```
 
 Update replaces links:
@@ -152,6 +152,6 @@ knights.filter(courted_princesses__age__gt=18).all()
 
 ## Notes
 
-- Navigate resolved relations via `.obj` on returned `QItem` values.
+- Navigate resolved relations via `.q` on returned `QItem` values.
 - Scalar-style FK fields are typically named with `_id` suffix (`sword_id`, `killer_id`, `owner_id`).
 - Mtm join table and relation indexes are created automatically.

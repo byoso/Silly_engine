@@ -22,7 +22,7 @@ def test_meta_defaults_applied_on_insert():
     users.insert({"username": "alice"})
     alice = users.get(username="alice")
 
-    assert alice.obj.status == "active"
+    assert alice.q.status == "active"
 
 
 def test_meta_auto_now_add_on_insert():
@@ -88,7 +88,7 @@ def test_meta_ordering_applied_automatically():
     scores.insert({"player": "charlie", "points": 75})
 
     results = scores.filter().all()
-    points = [r.obj.points for r in results]
+    points = [r.q.points for r in results]
 
     assert points == [100, 75, 50]
 
@@ -206,7 +206,7 @@ def test_meta_table_name_used_for_table():
 
     blog_posts.insert({"title": "Hello World"})
     post = blog_posts.first()
-    assert post.obj.title == "Hello World"
+    assert post.q.title == "Hello World"
 
     db.connector.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='posts'"
@@ -224,7 +224,7 @@ def test_db_table_called_with_model_class_only():
 
     comments.insert({"body": "Nice ORM!"})
     comment = comments.first()
-    assert comment.obj.body == "Nice ORM!"
+    assert comment.q.body == "Nice ORM!"
 
     db.connector.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='comment'"

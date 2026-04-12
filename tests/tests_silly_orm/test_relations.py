@@ -13,9 +13,9 @@ def test_oto_relation_resolution_and_relational_filter(orm_tables):
 
     result = knights.filter(sword__name="Excalibur").all()
 
-    assert [row.obj.name for row in result] == ["Arthur"]
-    assert knights.get(_id="k1").obj.sword.obj.name == "Excalibur"
-    assert swords.get(_id="s1").obj.owner.obj.name == "Arthur"
+    assert [row.q.name for row in result] == ["Arthur"]
+    assert knights.get(_id="k1").q.sword.q.name == "Excalibur"
+    assert swords.get(_id="s1").q.owner.q.name == "Arthur"
 
 
 def test_oto_reverse_side_backfills_forward_side(orm_tables):
@@ -27,8 +27,8 @@ def test_oto_reverse_side_backfills_forward_side(orm_tables):
     knight = knights.get(_id="k1")
     sword = swords.get(_id="s1")
 
-    assert knight.obj.sword.obj.name == "Excalibur"
-    assert sword.obj.owner.obj.name == "Arthur"
+    assert knight.q.sword.q.name == "Excalibur"
+    assert sword.q.owner.q.name == "Arthur"
 
 
 def test_oto_update_clears_previous_one_to_one_assignment(orm_tables):
@@ -40,9 +40,9 @@ def test_oto_update_clears_previous_one_to_one_assignment(orm_tables):
 
     knights.update("k1", sword_id="s2")
 
-    assert knights.get(_id="k1").obj.sword.obj.name == "Durandal"
-    assert swords.get(_id="s1").obj.owner is None
-    assert swords.get(_id="s2").obj.owner.obj.name == "Arthur"
+    assert knights.get(_id="k1").q.sword.q.name == "Durandal"
+    assert swords.get(_id="s1").q.owner is None
+    assert swords.get(_id="s2").q.owner.q.name == "Arthur"
 
 
 def test_otm_and_mto_resolution_and_filters(orm_tables):
@@ -56,10 +56,10 @@ def test_otm_and_mto_resolution_and_filters(orm_tables):
     knight = knights.filter(dragons_killed__name="Smaug").first()
     dragon = dragons.filter(killer__name="Lancelot").first()
 
-    assert knight.obj.name == "Arthur"
-    assert [item.obj.name for item in knights.get(_id="k1").obj.dragons_killed] == ["Smaug"]
-    assert dragon.obj.name == "Fafnir"
-    assert dragons.get(_id="d2").obj.killer.obj.name == "Lancelot"
+    assert knight.q.name == "Arthur"
+    assert [item.q.name for item in knights.get(_id="k1").q.dragons_killed] == ["Smaug"]
+    assert dragon.q.name == "Fafnir"
+    assert dragons.get(_id="d2").q.killer.q.name == "Lancelot"
 
 
 def test_otm_payload_is_ignored_on_insert_and_update(orm_tables):
@@ -75,7 +75,7 @@ def test_otm_payload_is_ignored_on_insert_and_update(orm_tables):
     ]
 
     assert "dragons_killed_ids" not in knight_columns
-    assert [item.obj.name for item in knights.get(_id="k1").obj.dragons_killed] == ["Smaug"]
+    assert [item.q.name for item in knights.get(_id="k1").q.dragons_killed] == ["Smaug"]
 
 
 def test_mtm_insert_populates_join_table_and_reverse_accessor(orm_tables):
@@ -95,8 +95,8 @@ def test_mtm_insert_populates_join_table_and_reverse_accessor(orm_tables):
     ).fetchall()
 
     assert join_rows == [("k1", "p1"), ("k1", "p2")]
-    assert [item.obj.name for item in knights.get(_id="k1").obj.courted_princesses] == ["Guenievre", "Elaine"]
-    assert [item.obj.name for item in princesses.get(_id="p1").obj.suitors] == ["Arthur"]
+    assert [item.q.name for item in knights.get(_id="k1").q.courted_princesses] == ["Guenievre", "Elaine"]
+    assert [item.q.name for item in princesses.get(_id="p1").q.suitors] == ["Arthur"]
 
 
 def test_mtm_update_replaces_links_and_accepts_alias_key(orm_tables):
@@ -119,7 +119,7 @@ def test_mtm_update_replaces_links_and_accepts_alias_key(orm_tables):
     ).fetchall()
 
     assert join_rows == [("k1", "p2"), ("k1", "p3")]
-    assert [item.obj.name for item in knights.get(_id="k1").obj.courted_princesses] == ["Elaine", "Isolde"]
+    assert [item.q.name for item in knights.get(_id="k1").q.courted_princesses] == ["Elaine", "Isolde"]
 
 
 def test_mtm_update_adds_links_when_record_started_without_relations(orm_tables):
@@ -128,7 +128,7 @@ def test_mtm_update_adds_links_when_record_started_without_relations(orm_tables)
     princesses.insert({"_id": "p1", "name": "Guenievre", "age": 22})
     knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
 
-    assert knights.get(_id="k1").obj.courted_princesses == []
+    assert knights.get(_id="k1").q.courted_princesses == []
 
     knights.update("k1", courted_princesses=["p1"])
 
@@ -137,8 +137,8 @@ def test_mtm_update_adds_links_when_record_started_without_relations(orm_tables)
     ).fetchall()
 
     assert join_rows == [("k1", "p1")]
-    assert [item.obj.name for item in knights.get(_id="k1").obj.courted_princesses] == ["Guenievre"]
-    assert [item.obj.name for item in princesses.get(_id="p1").obj.suitors] == ["Arthur"]
+    assert [item.q.name for item in knights.get(_id="k1").q.courted_princesses] == ["Guenievre"]
+    assert [item.q.name for item in princesses.get(_id="p1").q.suitors] == ["Arthur"]
 
 
 def test_mtm_relational_filter_works_with_gt_operator(orm_tables):
@@ -151,7 +151,7 @@ def test_mtm_relational_filter_works_with_gt_operator(orm_tables):
 
     rows = knights.filter(courted_princesses__age__gt=18).all()
 
-    assert [row.obj.name for row in rows] == ["Arthur"]
+    assert [row.q.name for row in rows] == ["Arthur"]
 
 
 def test_duplicate_mtm_ids_are_ignored(orm_tables):

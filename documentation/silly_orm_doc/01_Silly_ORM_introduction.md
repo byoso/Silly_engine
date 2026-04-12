@@ -57,5 +57,5 @@ Swords.insert({"_id": "s1", "name": "Excalibur", "length": 120})
 Knights.insert({"name": "Arthur", "age": 40, "sword": "s1"})
 
 arthur = Knights.filter(name="Arthur").first()
-print(arthur.obj.name, "uses", arthur.obj.sword.obj.name)
+print(arthur.q.name, "uses", arthur.q.sword.q.name)
 ```

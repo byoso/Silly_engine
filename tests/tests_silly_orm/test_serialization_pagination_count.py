@@ -61,7 +61,7 @@ def test_pagination_basic(orm_tables):
     page2 = knights.filter().paginate(page_size=3, page=2)
     assert page2.page == 2
     assert len(page2.data) == 3
-    assert page2.data[0].obj._id != page1.data[0].obj._id
+    assert page2.data[0].q._id != page1.data[0].q._id
 
     page4 = knights.filter().paginate(page_size=3, page=4)
     assert page4.page == 4
