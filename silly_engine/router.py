@@ -2,6 +2,7 @@
 
 """
 file version:
+- 1.0.3: Router() signature with "name" in first position
 - 1.0.2: better help display for long routes
 A router for command line applications
 """
@@ -64,8 +65,8 @@ class Subrouter:
 class Router:
     def __init__(
             self,
-            routes: list = list(),
             name: str="Silly Router",
+            routes: list | None = None,
             separator: str=" ",
             query_separator="?",
             queries_separator="+",
