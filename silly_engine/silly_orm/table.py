@@ -126,7 +126,7 @@ class Table:
         target_table, reverse_field = self._find_reverse_oto(rel)
 
         if reverse_field and not target_id:
-            reverse_row = target_table.get(**{reverse_field: source_id})
+            reverse_row = target_table.filter_first(**{reverse_field: source_id})
             if reverse_row is not None:
                 target_id = reverse_row._data.get("_id")
                 self.db.connector.execute(
@@ -378,7 +378,16 @@ class Table:
 
         self.delete_by_id(_id)
 
-    def get(self, **kwargs):
+    def get_by_id(self, _id: str):
+        row = self._fetch_row_data(_id=_id)
+        if row is None:
+            return None
+        return self._make_item(row)
+
+    def filter_first(self, **kwargs):
+        """Returns a single QItem matching the filters, or None if not found.
+        This is equivalent to a filter(...).first() shortcut.
+        """
         filters = " AND ".join(f"{k}=?" for k in kwargs.keys())
         sql = f"SELECT * FROM {self.name} WHERE {filters} LIMIT 1"
         self.db.connector.execute(sql, tuple(kwargs.values()))

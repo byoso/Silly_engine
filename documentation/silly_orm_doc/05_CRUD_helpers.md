@@ -13,16 +13,30 @@ Knights.insert({"name": "Arthur", "age": 40})
 # Insert with explicit ID
 Knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
 
-# Insert returns nothing; fetch with get() or filter()
+# Insert returns nothing; fetch with filter_first() or filter()
 ```
 
 ## Read (Get, Filter, Query)
+
 
 ### Simple fetch
 
 ```python
 # Get single record by condition (returns item or None)
-arthur = Knights.get(name="Arthur")
+arthur = Knights.filter_first(name="Arthur")
+```
+
+### Get by ID
+
+```python
+# Fetch a single record by its unique ID (returns item or None)
+bedivere = Knights.get_by_id("k42")
+if bedivere:
+    print(bedivere.q.name)
+
+# Returns None if not found
+missing = Knights.get_by_id("doesnotexist")
+assert missing is None
 ```
 
 ### Query with filters

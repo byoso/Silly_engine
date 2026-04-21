@@ -1,9 +1,21 @@
+def test_get_by_id_returns_qitem_or_none(orm_tables):
+    _, knights, *_ = orm_tables
+
+    knights.insert({"_id": "k42", "name": "Bedivere", "age": 38})
+
+    item = knights.get_by_id("k42")
+    assert item is not None
+    assert item.q.name == "Bedivere"
+    assert item.q.age == 38
+
+    missing = knights.get_by_id("doesnotexist")
+    assert missing is None
 def test_insert_without_id_generates_uuid_and_get_returns_qitem(orm_tables):
     _, knights, *_ = orm_tables
 
     knights.insert({"name": "Arthur", "age": 40})
 
-    knight = knights.get(name="Arthur")
+    knight = knights.filter_first(name="Arthur")
     assert knight is not None
     assert isinstance(knight._data["_id"], str)
     assert knight._data["_id"]
@@ -29,7 +41,7 @@ def test_update_scalar_fields(orm_tables):
     knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
     knights.update("k1", age=41, name="Arthur Pendragon")
 
-    knight = knights.get(_id="k1")
+    knight = knights.filter_first(_id="k1")
     assert knight.q.name == "Arthur Pendragon"
     assert knight.q.age == 41
 
@@ -59,7 +71,7 @@ def test_bulk_update_with_filter_chain(orm_tables):
 
     assert affected == 2
     assert knights.filter(name="Veteran").count() == 2
-    assert knights.get(_id="k3").q.name == "Perceval"
+    assert knights.filter_first(_id="k3").q.name == "Perceval"
 
 
 def test_bulk_update_apply_alias(orm_tables):
@@ -73,7 +85,7 @@ def test_bulk_update_apply_alias(orm_tables):
 
     assert affected == 2
     assert knights.filter(name="Senior").count() == 2
-    assert knights.get(_id="k3").q.name == "Perceval"
+    assert knights.filter_first(_id="k3").q.name == "Perceval"
 
 
 def test_bulk_delete_with_relational_filter_chain(orm_tables):
@@ -88,5 +100,5 @@ def test_bulk_delete_with_relational_filter_chain(orm_tables):
     affected = knights.delete().filter(sword__name="Excalibur").execute()
 
     assert affected == 1
-    assert knights.get(_id="k1") is None
-    assert knights.get(_id="k2") is not None
+    assert knights.filter_first(_id="k1") is None
+    assert knights.filter_first(_id="k2") is not None

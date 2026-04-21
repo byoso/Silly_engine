@@ -20,7 +20,7 @@ def test_meta_defaults_applied_on_insert():
     users = db.table("users", User)
 
     users.insert({"username": "alice"})
-    alice = users.get(username="alice")
+    alice = users.filter_first(username="alice")
 
     assert alice.q.status == "active"
 
@@ -64,7 +64,7 @@ def test_meta_auto_now_on_update():
     posts.update("p1", title="Updated")
     after_update = int(time.time())
 
-    post = posts.get(_id="p1")
+    post = posts.filter_first(_id="p1")
     updated_ts = post._data.get("_updated_at")
 
     assert updated_ts is not None
@@ -105,7 +105,7 @@ def test_meta_ttl_adds_expiry_field():
     tokens = db.table("tokens", Token)
 
     tokens.insert({"_id": "t1", "value": "abc123"})
-    token = tokens.get(_id="t1")
+    token = tokens.filter_first(_id="t1")
 
     assert "_expires_at" in token._data
     assert token._data["_expires_at"] > int(time.time())

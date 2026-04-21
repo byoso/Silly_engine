@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass
+import logging
 from typing import get_type_hints, Callable
 from contextlib import contextmanager
-import sys
 
 from .connectors.sqlite import SQLiteConnector
 from .models import Model
@@ -9,19 +9,16 @@ from .relations.mtm import Mtm
 from .relations.mto import Mto
 from .relations.oto import Oto
 from .table import Table
-from .tools import _is_migration_applicable, SillyDbError
+from .tools import SillyDbError
 
+logger = logging.getLogger("SillyDb")
 
-def _emit_migration_rollback_warning(migration_version: str, err: Exception) -> None:
-    """Print a soft-red warning that SQLite DDL rollback can be partial."""
-    soft_red = "\x1b[0;30;31m"
-    reset = "\x1b[0m"
-    warning = (
-        f"{soft_red}[SillyORM][WARNING] Migration {migration_version} failed: {err}. "
-        "SQLite DDL rollback may be partial; verify schema changes manually."
-        f"{reset}"
-    )
-    print(warning, file=sys.stderr)
+def version_tuple(version_str: str) -> tuple[int, ...]:
+    """Convert a version string like '1.2.3' to a tuple (1, 2, 3) for comparison."""
+    try:
+        return tuple(int(part) for part in version_str.split('.'))
+    except ValueError:
+        raise SillyDbError(f"Invalid version format: '{version_str}'. Expected format is 'X.Y.Z' where X, Y, Z are integers.")
 
 
 def _is_connector_module(connector, module_suffix: str) -> bool:
@@ -125,7 +122,7 @@ class Settings(Model):
 
 
 class SillyDb:
-    def __init__(self, db_path: str | None = None, connector=None,):
+    def __init__(self, db_path: str | None = None, connector=None, logger=logger):
         """
         Initialize the DB.
         - If a connector is provided, use it.
@@ -137,6 +134,7 @@ class SillyDb:
         self._model_to_table = {}
         self._in_transaction = False
         self._transaction_depth = 0
+        self.logger = logger
         if connector is None and db_path is not None:
             self.connector = SQLiteConnector(db_path)
         elif connector is not None:
@@ -236,25 +234,57 @@ class SillyDb:
                 f"CREATE INDEX IF NOT EXISTS {idx} ON {table_name} ({field_name})"
             )
 
-    def migrate(self, migrations: list[tuple[str, Callable[["SillyDb"], None]]]):
-        for migration in migrations:
-            db_settings = self._tables["_settings"].first()
-            db_version = db_settings.q.version
-            migration_version = migration[0]
-            if _is_migration_applicable(db_version, migration_version):
+    def migrate(self, migrations: dict[str, Callable[["SillyDb"], None]], target_version: str | None = None):
+        """
+        Apply migrations in order, using version comparison logic similar to JsonDb.
+        - migrations: dict mapping version string to migration function
+        - target_version: if set, only migrate up to this version (inclusive)
+        """
+        if not isinstance(migrations, dict):
+            raise SillyDbError("Migrations must be a dict {version: function}")
+
+        db_settings = self._tables["_settings"].first()
+        if db_settings is None:
+            raise SillyDbError("Missing _settings row in database")
+        current_version = db_settings.q.version
+
+        # If no explicit target_version, use the highest migration version
+        migration_versions = sorted(migrations.keys(), key=version_tuple)
+        if target_version is None and migration_versions:
+            target_version = migration_versions[-1]
+
+        for migration_version in migration_versions:
+            if version_tuple(current_version) < version_tuple(migration_version) <= version_tuple(target_version):
+                self.logger.info(f"Migration to v{migration_version}...")
                 try:
                     with self.transaction():
-                        migration[1](self)
+                        migrations[migration_version](self)
                         db_settings = self._tables["_settings"].first()
                         if db_settings is None:
                             raise SillyDbError("Missing _settings row while updating migration version")
                         self._tables["_settings"].update(db_settings.q._id, version=migration_version)
+                    self.logger.info(f"Successfully upgraded SillyDb to v{migration_version}")
+                    current_version = migration_version
                 except Exception as e:
+                    self.logger.error(f"Migration {migration_version} failed: {str(e)}")
                     if _is_connector_module(self.connector, ".connectors.sqlite"):
-                        _emit_migration_rollback_warning(migration_version, e)
+                        self.logger.warning("SQLite DDL rollback may be partial; verify schema changes manually.")
                     raise SillyDbError(f"Migration {migration_version} failed: {str(e)}") from e
 
-    def table(self, name_or_model, model=None):
+        # Final version update if needed
+        if current_version != target_version:
+            db_settings = self._tables["_settings"].first()
+            if db_settings is None:
+                raise SillyDbError("Missing _settings row while updating final migration version")
+            self._tables["_settings"].update(db_settings.q._id, version=target_version)
+            self.logger.info(f"Database version set to {target_version}")
+
+    def table(self, name_or_model, model=None) -> "Table":
+        """
+        Return a Table object for the given table name and model.
+        Returns:
+            Table: The table object for further operations (insert, filter, etc).
+        """
         # If name_or_model is a class, extract table name from Meta.table_name or class name
         if isinstance(name_or_model, type):
             model = name_or_model

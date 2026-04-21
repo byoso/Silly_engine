@@ -5,7 +5,7 @@ def test_qitem_dict_and_json(orm_tables):
     _, knights, *_ = orm_tables
 
     knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
-    arthur = knights.get(_id="k1")
+    arthur = knights.filter_first(_id="k1")
 
     d = arthur.dict()
     assert isinstance(d, dict)

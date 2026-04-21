@@ -1,3 +1,5 @@
+from typing import Any
+
 from .relations.otm import Otm
 from .relations.mtm import Mtm
 from .relations.oto import Oto
@@ -25,7 +27,13 @@ class Accessor:
         self._data = data
         self._db = db
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
+        """
+        For relation fields:
+        - Otm, Mtm: always returns a list of QItem (never None)
+        - Oto, Mto: returns a QItem or None
+        For normal fields: returns the value or None.
+        """
         aliases = self._model_cls.relation_aliases()
         relation_fields = self._model_cls.get_relations()
         field_name = aliases.get(name, name)
@@ -65,7 +73,7 @@ class Accessor:
                 target_table = self._db.table(rel_obj.target)
 
                 return [
-                    target_table.get(_id=i)
+                    target_table.filter_first(_id=i)
                     for i in ids
                 ]
 
@@ -84,7 +92,7 @@ class Accessor:
             value = self._data.get(field_name)
 
             if value is None:
-                if isinstance(rel_obj, Otm):
+                if isinstance(rel_obj, (Otm, Mtm)):
                     return []
                 return None
 
@@ -112,7 +120,7 @@ class Accessor:
         return self._db.table(self._source_table())
 
     def _refresh_from_db(self):
-        source = self._source_table_obj().get(_id=self._source_id())
+        source = self._source_table_obj().filter_first(_id=self._source_id())
         if source is None:
             return
         self._data.clear()

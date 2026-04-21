@@ -24,4 +24,4 @@ class Mtm(SillyOrmRelation):
         )
         ids = [r[0] for r in db.fetchall()]
         table = db.table(self.target)
-        return [table.get(_id) for _id in ids]
+        return [table.filter_first(_id) for _id in ids]

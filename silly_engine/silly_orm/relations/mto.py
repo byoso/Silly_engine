@@ -6,4 +6,4 @@ class Mto(SillyOrmRelation):
 
     def resolve(self, db, value):
         table = db.table(self.target)
-        return table.get(_id=value)
+        return table.filter_first(_id=value)

@@ -123,9 +123,11 @@ print("created princesses:", [item.q.name for item in CourtedPrincesses.filter()
 
 print("\n=== Read ===")
 
-arthur = Knights.get(_id="k1")
+arthur = Knights.filter_first(_id="k1")
+assert arthur is not None
 young_knights = Knights.filter(age__lt=35).order_by("age").all()
-lancelot = Knights.get(name="Lancelot")
+lancelot = Knights.filter_first(name="Lancelot")
+assert lancelot is not None
 
 print("get(_id='k1') ->", arthur.q.name, arthur.q.age)
 print("get(name='Lancelot') ->", lancelot.q.name, lancelot.q.age)
@@ -137,9 +139,12 @@ Knights.update("k4", sword="s4")
 Knights.update("k2", age=36, courted_princesses=["p2", "p3"])
 Knights.update("k5", courted_princesses=["p5"])
 
-galahad = Knights.get(_id="k4")
-lancelot = Knights.get(_id="k2")
-percival = Knights.get(_id="k5")
+galahad = Knights.get_by_id("k4")
+assert galahad is not None
+lancelot = Knights.get_by_id("k2")
+assert lancelot is not None
+percival = Knights.get_by_id("k5")
+assert percival is not None
 
 print("updated Galahad sword ->", galahad.q.sword.q.name)
 print("updated Lancelot age ->", lancelot.q.age)
@@ -150,9 +155,10 @@ print("\n=== Delete ===")
 
 print("before delete, Galahad princesses ->", [p.q.name for p in galahad.q.courted_princesses])
 CourtedPrincesses.delete_by_id("p4")
-galahad = Knights.get(_id="k4")
+galahad = Knights.filter_first(_id="k4")
+assert galahad is not None
 
-print("after delete, princess p4 exists ->", CourtedPrincesses.get(_id="p4"))
+print("after delete, princess p4 exists ->", CourtedPrincesses.filter_first(_id="p4"))
 print("after delete, Galahad princesses ->", [p.q.name for p in galahad.q.courted_princesses])
 
 print("\n=== Relation Queries ===")
@@ -171,16 +177,22 @@ for k in Knights.filter(courted_princesses__age__gt=18).all():
 
 print("\n=== Object Navigation Examples ===")
 
-gawain = Knights.get(_id="k3")
-durandal = Swords.get(_id="s2")
-smaug = DeadDragons.get(_id="d1")
-isolde = CourtedPrincesses.get(_id="p3")
+gawain = Knights.filter_first(_id="k3")
+assert gawain is not None
+durandal = Swords.filter_first(_id="s2")
+assert durandal is not None
+smaug = DeadDragons.filter_first(_id="d1")
+assert smaug is not None
+isolde = CourtedPrincesses.filter_first(_id="p3")
+assert isolde is not None
 
+assert arthur is not None
 print("Oto from Knight -> Sword:")
 print(arthur.q.name, "uses", arthur.q.sword.q.name)
 
 print("Oto from Sword -> Knight:")
-print(durandal.q.name, "belongs to", durandal.q.owner.q.name)
+if durandal is not None and durandal.q.owner is not None:
+    print(durandal.q.name, "belongs to", durandal.q.owner.q.name)
 
 print("Otm from Knight -> DeadDragons:")
 print(gawain.q.name, "killed", [dragon.q.name for dragon in gawain.q.dragons_killed])

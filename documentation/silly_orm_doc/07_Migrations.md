@@ -13,10 +13,10 @@ def mig_1_1_0(db):
     db.execute("UPDATE knights SET title = ? WHERE title IS NULL", ("Sir",))
 
 
-db.migrate([
-    ("1.0.0", mig_1_0_0),
-    ("1.1.0", mig_1_1_0),
-])
+db.migrate({
+    "1.0.0": mig_1_0_0,
+    "1.1.0": mig_1_1_0,
+})
 ```
 
 ## Notes

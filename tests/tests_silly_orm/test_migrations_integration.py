@@ -26,11 +26,11 @@ def test_migrate_applies_helper_based_schema_changes_and_updates_version():
     def mig_1_2_0(migration_db):
         safe_create_index(migration_db, "knights", ["title"], index_name="idx_knights_title")
 
-    db.migrate([
-        ("1.0.0", mig_1_0_0),
-        ("1.1.0", mig_1_1_0),
-        ("1.2.0", mig_1_2_0),
-    ])
+    db.migrate({
+        "1.0.0": mig_1_0_0,
+        "1.1.0": mig_1_1_0,
+        "1.2.0": mig_1_2_0,
+    })
 
     assert introspect_column_exists(db, "knights", "rank") is False
     assert introspect_column_exists(db, "knights", "title") is True
@@ -59,10 +59,10 @@ def test_migrate_does_not_reapply_same_versions():
         counters["b"] += 1
         migration_db.execute("INSERT INTO migration_runs (_id, value) VALUES (?, ?)", ("b", "v2"))
 
-    migrations = [
-        ("1.0.0", mig_1_0_0),
-        ("1.1.0", mig_1_1_0),
-    ]
+    migrations = {
+        "1.0.0": mig_1_0_0,
+        "1.1.0": mig_1_1_0,
+    }
 
     db.migrate(migrations)
     db.migrate(migrations)
@@ -85,7 +85,7 @@ def test_migrate_rename_table_with_safe_helper():
     def mig_2_0_0(migration_db):
         safe_rename_table(migration_db, "warriors", "knights")
 
-    db.migrate([("2.0.0", mig_2_0_0)])
+    db.migrate({"2.0.0": mig_2_0_0})
 
     assert introspect_table_exists(db, "warriors") is False
     assert introspect_table_exists(db, "knights") is True
@@ -104,7 +104,7 @@ def test_migrate_failed_helper_migration_does_not_advance_db_version():
         raise RuntimeError("boom")
 
     with pytest.raises(Exception):
-        db.migrate([("3.0.0", mig_3_0_0)])
+        db.migrate({"3.0.0": mig_3_0_0})
 
     # SQLite may persist ALTER TABLE schema changes even when migration fails.
     assert introspect_column_exists(db, "knights", "rank") is True

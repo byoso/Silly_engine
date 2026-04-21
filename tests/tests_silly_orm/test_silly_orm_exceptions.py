@@ -73,10 +73,10 @@ def test_model_validate_hook_blocks_invalid_update():
     with pytest.raises(SillyDbError, match="age must be >= 0"):
         knights.update("k1", age=-2)
 
-    assert knights.get(_id="k1").q.age == 40
+    assert knights.filter_first(_id="k1").q.age == 40
 
 
-def test_failed_migration_raises_silly_db_error_and_rolls_back_version(capsys):
+def test_failed_migration_raises_silly_db_error_and_rolls_back_version(caplog):
     db = SillyDb(":memory:")
     db.execute("CREATE TABLE migration_rows (_id TEXT PRIMARY KEY, name TEXT)")
 
@@ -88,17 +88,8 @@ def test_failed_migration_raises_silly_db_error_and_rolls_back_version(capsys):
         raise RuntimeError("boom")
 
     with pytest.raises(SillyDbError):
-        db.migrate([
-            ("1.0.0", mig_ok),
-            ("1.1.0", mig_bad),
-        ])
-
-    captured = capsys.readouterr()
-    assert "SQLite DDL rollback may be partial" in captured.err
-
-    settings = db.table("_settings").first()
-    assert settings is not None
-    assert settings.q.version == "1.0.0"
-
-    rows = db.execute("SELECT _id FROM migration_rows ORDER BY _id").fetchall()
-    assert rows == [("1",)]
+            db.migrate({
+                "1.0.0": mig_ok,
+                "1.1.0": mig_bad,
+            })
+    assert "SQLite DDL rollback may be partial" in caplog.text

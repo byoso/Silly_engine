@@ -1,4 +1,5 @@
 from .models import Model
+from .item import QItem
 from .relations.oto import Oto
 from .relations.otm import Otm
 from .relations.mto import Mto
@@ -180,7 +181,7 @@ class Query:
 
         return sql, params
 
-    def all(self):
+    def all(self) -> list[QItem]:
         sql, params = self._build_sql()
         self.table.db.connector.execute(sql, params)
         rows = self.table.db.connector.fetchall()
