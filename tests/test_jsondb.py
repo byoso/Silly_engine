@@ -1,15 +1,4 @@
-import json
-import os
-
-from silly_engine.jsondb import Version, JsonDb
-
-
-def test_version_parsing_and_comparison():
-    v1 = Version('1.2.3')
-    v2 = Version('1.3.0')
-    assert str(v1) == '1.2.3'
-    assert v1 < v2
-    assert v2 > v1
+from silly_engine.jsondb import JsonDb
 
 
 def test_collection_insert_get_update_delete(tmp_path):
@@ -26,3 +15,31 @@ def test_collection_insert_get_update_delete(tmp_path):
     assert 'age' not in item.data
     item.delete()
     assert coll.get(item._id) is None
+
+
+def test_jsondb_migrations(tmp_path):
+    dbfile = tmp_path / 'db.json'
+
+    # Create an initial database with version 1.0.0
+    db = JsonDb(str(dbfile), autosave=False, version="1.0.0")
+    coll = db.collection('test')
+    coll.insert({'name': 'alice', 'age': 20})
+    db.save()
+
+    # Define a migration that adds a 'migrated' field to all items
+    def migration_1_1_0(db):
+        coll = db.collection('test')
+        for item in coll.all():
+            item.data['migrated'] = True
+
+    migrations = {
+        "1.1.0": migration_1_1_0
+    }
+
+    # Reload the database with the migration and a higher version
+    db2 = JsonDb(str(dbfile), autosave=False, version="1.1.0", migrations=migrations)
+    coll2 = db2.collection('test')
+    items = list(coll2.all())
+    assert len(items) == 1
+    assert items[0].data['name'] == 'alice'
+    assert items[0].data['migrated'] is True

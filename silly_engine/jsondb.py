@@ -2,6 +2,7 @@
 
 """
 Version:
+- 1.2.1: better migration system, with version comparison and migration applicability check:
 - 1.2.0: support for atomic file writes and crash-safe saving, plus minor bugfixes
 - 1.1.2: bugfix in _id attribution in Collection.insert() and Collection.update()
 - 1.1.1: support custom dataclass for input/output
@@ -45,50 +46,12 @@ class JsonDbError(Exception):
     pass
 
 
-class Version:
-    """
-    class to handle versions in order to migrate or not the database
-    """
-    def __init__(self, str_version: str = "0.0.0") -> None:
-        list_version = str_version.split(".")
-        try:
-            self.major = int(list_version[0])
-            self.minor = int(list_version[1])
-            self.patch = int(list_version[2])
-        except (IndexError, ValueError):
-            raise JsonDbError("Version: a version must be of the form 'x.x.x' where x are integers (major, minor, patch)")
-
-    def __str__(self) -> str:
-        return f"{self.major}.{self.minor}.{self.patch}"
-
-    def __repr__(self) -> str:
-        return f"Version('{self}')"
-
-    def _as_tuple(self) -> tuple[int, int, int]:
-        """Retourne la version sous forme de tuple (major, minor, patch)."""
-        return (self.major, self.minor, self.patch)
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, Version):
-            return NotImplemented
-        return self._as_tuple() == other._as_tuple()
-
-    def __lt__(self, other) -> bool:
-        if not isinstance(other, Version):
-            return NotImplemented
-        return self._as_tuple() < other._as_tuple()
-
-    def __gt__(self, other) -> bool:
-        if not isinstance(other, Version):
-            return NotImplemented
-        return self._as_tuple() > other._as_tuple()
-
-    def __le__(self, other) -> bool:
-        return self == other or self < other
-
-    def __ge__(self, other) -> bool:
-        return self == other or self > other
-
+def version_tuple(version_str: str) -> tuple[int, ...]:
+    """Convert a version string like '1.2.3' to a tuple (1, 2, 3) for comparison."""
+    try:
+        return tuple(int(part) for part in version_str.split('.'))
+    except ValueError:
+        raise JsonDbError(f"Invalid version format: '{version_str}'. Expected format is 'X.Y.Z' where X, Y, Z are integers.")
 
 class Item:
     def __init__(self, data: dict | Any, collection: Collection, _id=None) -> None:
@@ -182,11 +145,12 @@ class JsonDb:
         assert recorded_version is not None
         if self._migrations is not None:
             for migration in self._migrations:
-                if Version(recorded_version) < Version(migration) <= Version(self._version):
+                if version_tuple(recorded_version) < version_tuple(migration) <= version_tuple(self._version):
                     print(f"Migration to v{migration}...")
                     self._migrations[migration](self)
-                    settings.first_update({"version": migration})
-                    print(f"Successfully upgraded JsonDb to v{migration}")
+                    print(f"Successfully upgraded JsonDb to v{self._version}")
+        if recorded_version != self._version:
+            settings.first_update({"version": self._version})
 
 
 

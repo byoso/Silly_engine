@@ -29,7 +29,7 @@ class Person:
 
 # db: JsonDb = JsonDb("test.json", autosave=True)
 
-db: JsonDb = JsonDb("data.json", autosave=True, version="0.0.0", migrations={
+db: JsonDb = JsonDb("data.json", autosave=True, version="2.0.0", migrations={
     # play with the migrations: change the db version to see how it goes
     "1.0.0": mig_1_0_0,
     "2.0.0": mig_2_0_0,
@@ -87,7 +87,7 @@ router = Router(name="test router", width=WIDTH)
 router.add_routes([
     "test",
     [["", "-h", "--help"], router.display_help, "display this help"],
-    ["query", with_query, "query_params test (e.g: query?foo=bar+oof=rab)"],
+    ["query", with_query, "query_params test (e.g: query ?foo=bar+oof=rab)"],
     ["infos", infos, "infos about the database"],
     ["person <name:str> <age:int>", person, "create a test object"],
     ["list <collection_name:str>", list_collection, "list the items in the collection 'persons' or 'queries'"],
@@ -100,5 +100,6 @@ router.add_routes([
 if __name__ == "__main__":
     try:
         router.query()
+        # router.query("query ?foo=bar+oof=rab")
     except RouterError as e:
         print(f"Error: {e}")
