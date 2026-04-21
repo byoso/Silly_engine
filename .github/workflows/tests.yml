@@ -23,7 +23,7 @@ jobs:
 
       - name: Run SQLite-focused tests
         run: |
-          python -m pytest tests/tests_silly_orm tests/test_silly_orm_exceptions.py -q
+          python -m pytest tests/tests_silly_orm -q
 
   postgres-tests:
     runs-on: ubuntu-latest
