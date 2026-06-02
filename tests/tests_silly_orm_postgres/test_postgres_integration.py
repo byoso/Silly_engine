@@ -79,10 +79,12 @@ def test_postgres_generate_schema_uses_boolean_and_bigint(pg_db):
     class Event(Model):
         name: str
         active: bool
+        created_at: int = 0
+        updated_at: int = 0
 
         class Meta:
-            auto_now_add = True
-            auto_now = True
+            auto_now_add = ["created_at"]
+            auto_now = ["updated_at"]
             ttl = 60
 
     events = pg_db.table(table_name, Event)
@@ -98,8 +100,8 @@ def test_postgres_generate_schema_uses_boolean_and_bigint(pg_db):
     type_by_col = {row[0]: row[1] for row in pg_db.fetchall()}
 
     assert type_by_col["active"] == "boolean"
-    assert type_by_col["_created_at"] == "bigint"
-    assert type_by_col["_updated_at"] == "bigint"
+    assert type_by_col["created_at"] == "bigint"
+    assert type_by_col["updated_at"] == "bigint"
     assert type_by_col["_expires_at"] == "bigint"
 
     pg_db.execute(f"DROP TABLE IF EXISTS {table_name}")

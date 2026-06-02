@@ -29,6 +29,7 @@ def test_meta_auto_now_add_on_insert():
     @dataclass
     class Event(Model):
         name: str
+        created_at: int = 0
 
         class Meta:
             auto_now_add = ["created_at"]
@@ -41,7 +42,7 @@ def test_meta_auto_now_add_on_insert():
     after = int(time.time())
 
     event = events.filter(name="meeting").first()
-    created_ts = event._data.get("_created_at")
+    created_ts = event._data.get("created_at")
 
     assert created_ts is not None
     assert before <= created_ts <= after
@@ -51,6 +52,7 @@ def test_meta_auto_now_on_update():
     @dataclass
     class Post(Model):
         title: str
+        updated_at: int = 0
 
         class Meta:
             auto_now = ["updated_at"]
@@ -65,7 +67,7 @@ def test_meta_auto_now_on_update():
     after_update = int(time.time())
 
     post = posts.filter_first(_id="p1")
-    updated_ts = post._data.get("_updated_at")
+    updated_ts = post._data.get("updated_at")
 
     assert updated_ts is not None
     assert before_update <= updated_ts <= after_update

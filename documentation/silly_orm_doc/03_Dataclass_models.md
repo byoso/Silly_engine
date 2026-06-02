@@ -83,8 +83,8 @@ class Article(Model):
 | `defaults` | `dict` | Field values applied automatically on insert if not provided in the payload. |
 | `unique` | `list` | Unique constraints. Each entry is a field name (single) or a list of field names (composite). |
 | `indexes` | `list[str]` | Fields to index with `CREATE INDEX`. |
-| `auto_now_add` | `bool` | If `True`, adds a `_created_at` unix timestamp column, set once on insert. |
-| `auto_now` | `bool` | If `True`, adds a `_updated_at` unix timestamp column, updated on every `update()`. |
+| `auto_now_add` | `list[str]` | Set a unix timestamp column once on insert in the selected columns. |
+| `auto_now` | `list[str]` | update a unix timestamp column on every update of the model in the selected columns. |
 | `ttl` | `int` | Time-to-live in seconds. Adds a `_expires_at` column; expired records are filtered out automatically from all queries. |
 
 ### Details

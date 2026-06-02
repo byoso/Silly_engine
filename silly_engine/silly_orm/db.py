@@ -84,12 +84,8 @@ def generate_create_table_sql(name: str, model: type, connector=None) -> str:
     if "_id" not in hints:
         raise SillyDbError(f"Dataclass {model.__name__} must have a _id field")
 
-    # Add auto timestamp fields based on Meta config
+    # Add Meta-driven auxiliary fields.
     meta = model.get_meta()
-    if hasattr(meta, 'auto_now_add') and meta.auto_now_add:
-        fields.append("_created_at BIGINT" if is_postgres else "_created_at INTEGER")
-    if hasattr(meta, 'auto_now') and meta.auto_now:
-        fields.append("_updated_at BIGINT" if is_postgres else "_updated_at INTEGER")
     if hasattr(meta, 'ttl') and meta.ttl:
         fields.append("_expires_at BIGINT" if is_postgres else "_expires_at INTEGER")
 
