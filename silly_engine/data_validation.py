@@ -10,6 +10,9 @@ from dataclasses import asdict, dataclass, fields, field, MISSING
 from typing import Any, get_origin, get_args, List, Dict
 from uuid import uuid4
 
+
+VERSION = "1.2.0"
+
 class DataValidationError(Exception):
     pass
 

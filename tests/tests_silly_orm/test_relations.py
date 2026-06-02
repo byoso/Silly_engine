@@ -41,7 +41,7 @@ def test_oto_update_clears_previous_one_to_one_assignment(orm_tables):
     knights.update("k1", sword_id="s2")
 
     assert knights.filter_first(_id="k1").q.sword.q.name == "Durandal"
-    assert swords.filter_first(_id="s1").q.owner is None
+    assert swords.filter_first(_id="s1").q.owner.get() is None
     assert swords.filter_first(_id="s2").q.owner.q.name == "Arthur"
 
 
@@ -128,7 +128,7 @@ def test_mtm_update_adds_links_when_record_started_without_relations(orm_tables)
     princesses.insert({"_id": "p1", "name": "Guenievre", "age": 22})
     knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
 
-    assert knights.filter_first(_id="k1").q.courted_princesses == []
+    assert knights.filter_first(_id="k1").q.courted_princesses.to_list() == [], f"received: {knights.filter_first(_id='k1').q.courted_princesses}"
 
     knights.update("k1", courted_princesses=["p1"])
 

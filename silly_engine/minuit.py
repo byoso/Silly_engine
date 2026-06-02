@@ -1,6 +1,7 @@
 import os
 from typing import Callable
 
+VERSION = "1.0.3"
 
 PROMPT = " > "
 WIDTH = 100

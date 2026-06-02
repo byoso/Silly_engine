@@ -4,19 +4,22 @@ from .base import BaseConnector
 from ..tools import SillyDbError
 
 class SQLiteConnector(BaseConnector):
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str | Path):
         self.db_path = Path(db_path)
-        self.conn = None
-        self.cursor = None
+        self.conn: sqlite3.Connection
+        self.cursor: sqlite3.Cursor
 
     def connect(self):
         try:
+            # Ensure the target directory exists for file-based SQLite databases.
+            if str(self.db_path) != ":memory:":
+                self.db_path.parent.mkdir(parents=True, exist_ok=True)
             self.conn = sqlite3.connect(str(self.db_path))
             self.cursor = self.conn.cursor()
         except sqlite3.Error as e:
             raise SillyDbError(f"SQLite connect failed for '{self.db_path}': {e}") from e
 
-    def execute(self, query: str, params=None):
+    def execute(self, query: str, params=None) -> sqlite3.Cursor:
         if params is None:
             params = ()
         try:

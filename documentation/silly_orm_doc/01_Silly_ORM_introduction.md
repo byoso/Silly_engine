@@ -54,8 +54,13 @@ Swords = db.table("swords", Sword)
 
 # your app can do some stuff:
 Swords.insert({"_id": "s1", "name": "Excalibur", "length": 120})
-Knights.insert({"name": "Arthur", "age": 40, "sword": "s1"})
+Knights.insert({"name": "Arthur", "age": 40})
 
-arthur = Knights.filter(name="Arthur").first()
-print(arthur.q.name, "uses", arthur.q.sword.q.name)
+arthur = Knights.filter_first(name="Arthur")
+arthur.q.sword.add("s1")
+
+print(arthur.q.name, "uses", arthur.q.sword.get().q.name)
+
+arthur.q.sword.remove()
+assert arthur.q.sword.get() is None
 ```

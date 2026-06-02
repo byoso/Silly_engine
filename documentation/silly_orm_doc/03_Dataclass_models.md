@@ -20,6 +20,35 @@ class Knight(Model):
 - `_id` is generated automatically if not provided.
 - Keep models focused on data shape and relation fields.
 
+## Computed properties with `@property`
+
+You can define computed properties on your model, and access them through the accessor (`item.q`).
+
+```python
+from dataclasses import dataclass
+from silly_engine.silly_orm.models import Model
+
+
+@dataclass
+class Knight(Model):
+    name: str
+    age: int
+
+    @property
+    def label(self) -> str:
+        return f"{self.name} ({self.age})"
+
+
+arthur = Knights.filter_first(name="Arthur")
+print(arthur.q.label)  # Arthur (40)
+```
+
+Behavior notes:
+
+- Properties are read-only unless you explicitly define a setter.
+- The value is computed each time you access `item.q.<property_name>`.
+- Properties can rely on model fields present in the row data.
+
 ---
 
 ## The `Meta` inner class
@@ -33,7 +62,7 @@ class Article(Model):
     author: str
     status: str = "draft"
 
-    class Meta:
+    class Meta(Model.Meta):
         table_name = "articles"
         ordering = ["-title"]
         defaults = {"status": "published"}

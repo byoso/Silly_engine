@@ -81,6 +81,7 @@ count = Knights.filter(age__gt=30).count()
 Knights.filter(age__gt=30).order_by("-age")  # descending
 ```
 
+
 ### Relational filters
 
 ```python
@@ -167,6 +168,46 @@ big_count = Knights.filter(age__gt=30).order_by("age").count()
 ```
 
 ## Convert to dict or JSON
+
+## Accessor (`item.q`) and computed properties
+
+`item.q` resolves regular fields, relations, and model `@property` values.
+
+```python
+arthur = Knights.filter_first(name="Arthur")
+
+print(arthur.q.name)   # regular field
+print(arthur.q.sword.get())  # Oto/Mto relation (QItem or None)
+print(arthur.q.label)  # model @property
+```
+
+Computed properties are evaluated each time you access them through `item.q`.
+
+### Relation helpers on `item.q.<relation>`
+
+Use relation-specific helpers directly on the relation accessor.
+
+```python
+arthur = Knights.filter_first(_id="k1")
+guenievre = CourtedPrincesses.filter_first(_id="p1")
+
+# Oto
+arthur.q.sword.add("s1")
+arthur.q.sword.remove()
+assert arthur.q.sword.get() is None
+
+# Otm
+arthur.q.dragons_killed.add("d1")
+arthur.q.dragons_killed.remove("d1")
+assert arthur.q.dragons_killed.to_list() == []
+
+# Mtm
+arthur.q.courted_princesses.add(guenievre)
+arthur.q.courted_princesses.remove(guenievre)
+assert arthur.q.courted_princesses.to_list() == []
+```
+
+`relation(...)` is no longer part of the accessor API.
 
 ### QItem conversion
 

@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 from dataclasses import dataclass
+from pathlib import Path
 import random
 
 from silly_engine.silly_orm.models import Model
@@ -9,6 +10,11 @@ from silly_engine.silly_orm.relations.otm import Otm
 from silly_engine.silly_orm.relations.mto import Mto
 from silly_engine.silly_orm.relations.mtm import Mtm
 from silly_engine.silly_orm.db import SillyDb
+
+
+db_path = Path("DB.sqlite3")
+if db_path.exists():
+    db_path.unlink()
 
 
 
@@ -42,7 +48,7 @@ class CourtedPrincess(Model):
         table_name = "courted_princesses"
 
 
-db = SillyDb("DB.sqlite3")
+db = SillyDb(str(db_path))
 
 Knights = db.table("knights", Knight)
 Swords = db.table("swords", Sword)
@@ -207,9 +213,9 @@ print("Mtm from CourtedPrincess -> Knights:")
 print(isolde.q.name, "has suitors", [knight.q.name for knight in isolde.q.suitors])
 
 print("\nMutable relation helpers (add/remove):")
-gawain.q.add("courted_princesses", isolde)
+gawain.q.relation("courted_princesses").add(isolde)
 print("after add,", gawain.q.name, "courted", [princess.q.name for princess in gawain.q.courted_princesses])
-gawain.q.remove("courted_princesses", isolde)
+gawain.q.relation("courted_princesses").remove(isolde)
 print("after remove,", gawain.q.name, "courted", [princess.q.name for princess in gawain.q.courted_princesses])
 
 gawain.q.relation("courted_princesses").add("p3")

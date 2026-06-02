@@ -38,6 +38,8 @@ import uuid
 
 from typing import Any, Callable, Generic, Sequence, Type, TypeVar
 
+VERSION = "1.2.1"
+
 WIDTH=80
 
 OutputModel = TypeVar('OutputModel')

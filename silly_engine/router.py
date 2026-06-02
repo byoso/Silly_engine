@@ -10,6 +10,7 @@ A router for command line applications
 import sys
 from typing import Any
 
+VERSION = "1.0.3"
 WIDTH=80
 
 def text_chunks(s: str, size: int) -> list[str]:

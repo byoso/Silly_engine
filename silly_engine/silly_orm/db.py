@@ -1,5 +1,6 @@
 from dataclasses import asdict, dataclass
 import logging
+from pathlib import Path
 from typing import get_type_hints, Callable
 from contextlib import contextmanager
 
@@ -13,8 +14,10 @@ from .tools import SillyDbError
 
 logger = logging.getLogger("SillyDb")
 
-def version_tuple(version_str: str) -> tuple[int, ...]:
+def version_tuple(version_str: str | None) -> tuple[int, ...]:
     """Convert a version string like '1.2.3' to a tuple (1, 2, 3) for comparison."""
+    if version_str is None:
+        return (0, 0, 0)
     try:
         return tuple(int(part) for part in version_str.split('.'))
     except ValueError:
@@ -122,7 +125,7 @@ class Settings(Model):
 
 
 class SillyDb:
-    def __init__(self, db_path: str | None = None, connector=None, logger=logger):
+    def __init__(self, db_path: str | Path | None = None, connector=None, logger=logger):
         """
         Initialize the DB.
         - If a connector is provided, use it.

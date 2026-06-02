@@ -1,37 +1,38 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 class BaseConnector(ABC):
-    """Interface pour tout backend DB"""
+    """Interface for any database backend."""
 
     @abstractmethod
-    def connect(self):
+    def connect(self) -> Any:
         pass
 
     @abstractmethod
-    def execute(self, query: str, params=None):
-        """Exécute une requête SQL (INSERT, UPDATE, DELETE, etc.)"""
+    def execute(self, query: str, params=None) -> Any:
+        """Execute an SQL query (INSERT, UPDATE, DELETE, etc.)."""
         pass
 
     @abstractmethod
-    def fetchone(self):
-        """Récupère un seul résultat"""
+    def fetchone(self) -> Any:
+        """Fetch a single result."""
         pass
 
     @abstractmethod
-    def fetchall(self):
-        """Récupère tous les résultats"""
+    def fetchall(self) -> Any:
+        """Fetch all results."""
         pass
 
     @abstractmethod
-    def commit(self):
-        """Valide les changements"""
+    def commit(self) -> Any:
+        """Commit pending changes."""
         pass
 
     @abstractmethod
-    def rollback(self):
-        """Annule les changements non validés"""
+    def rollback(self) -> Any:
+        """Rollback uncommitted changes."""
         pass
 
     @abstractmethod
-    def close(self):
+    def close(self) -> Any:
         pass

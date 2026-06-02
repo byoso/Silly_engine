@@ -15,6 +15,14 @@ class Knight(Model):
     dragons_killed_ids: Otm | None = Otm("dead_dragons")
     courted_princesses_ids: Mtm | None = Mtm("courted_princesses")
 
+    @property
+    def label(self) -> str:
+        return f"{self.name} ({self.age})"
+
+    @property
+    def has_sword(self) -> bool:
+        return self.sword_id is not None
+
 
 @dataclass
 class Sword(Model):
