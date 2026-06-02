@@ -213,31 +213,31 @@ assert arthur.q.courted_princesses.to_list() == []
 
 ```python
 # Single item to dict
-arthur_dict = arthur.dict()      # {"_id": "k1", "name": "Arthur", "age": 40}
+arthur_dict = arthur.to_dict()      # {"_id": "k1", "name": "Arthur", "age": 40}
 
 # Single item to JSON string
-arthur_json = arthur.json()      # '{"_id": "k1", "name": "Arthur", "age": 40}'
+arthur_json = arthur.to_json()      # '{"_id": "k1", "name": "Arthur", "age": 40}'
 ```
 
 ### Query result conversion
 
 ```python
 # Get all results as list of dicts (not QItems)
-dicts = Knights.filter(age__gt=30).dict()
+dicts = Knights.filter(age__gt=30).to_dict()
 
 # Get all results as JSON string
-json_str = Knights.filter(age__gt=30).json()
+json_str = Knights.filter(age__gt=30).to_json()
 ```
 
 ### Pagination conversion
 
 ```python
 # Pagination result to dict
-page_dict = page.dict()
+page_dict = page.to_dict()
 # Returns: {"data": [...], "page": 1, "page_size": 10, "total": 42}
 
 # Pagination result to JSON
-page_json = page.json()
+page_json = page.to_json()
 ```
 
 ## Notes

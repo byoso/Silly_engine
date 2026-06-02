@@ -1,4 +1,5 @@
 from .accessor import Accessor
+from dataclasses import fields
 import json
 
 
@@ -17,10 +18,27 @@ class QItem:
     def __repr__(self) -> str:
         return f"<Q{self._model.__name__} {self._data.get('_id')}>"
 
-    def dict(self) -> dict:
+    def to_dict(self) -> dict:
         """Convert item to dictionary."""
         return dict(self._data)
 
-    def json(self) -> str:
+    def to_model(self):
+        """Convert item to a model instance with properties preserved."""
+        model_cls = self._model
+
+        init_values = {}
+        for field_info in fields(model_cls):
+            if field_info.init and field_info.name in self._data:
+                init_values[field_info.name] = self._data[field_info.name]
+
+        model_obj = model_cls(**init_values)
+
+        for key, value in self._data.items():
+            if key not in init_values:
+                setattr(model_obj, key, value)
+
+        return model_obj
+
+    def to_json(self) -> str:
         """Convert item to JSON string."""
         return json.dumps(self._data, default=str)
