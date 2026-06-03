@@ -5,6 +5,7 @@ import pytest
 
 from silly_engine.silly_orm.db import SillyDb
 from silly_engine.silly_orm.models import Model
+from silly_engine.silly_orm.relations import Mto
 
 
 def test_meta_defaults_applied_on_insert():
@@ -134,6 +135,113 @@ def test_meta_ttl_filters_expired_records():
 
     assert cache.count() == 0
     assert cache.filter(key="k1").count() == 0
+
+
+def test_meta_ttl_hides_expired_on_get_by_id_and_filter_first():
+    @dataclass
+    class Cache(Model):
+        key: str
+        value: str
+
+        class Meta:
+            ttl = 60
+
+    db = SillyDb(":memory:")
+    cache = db.table("cache", Cache)
+
+    cache.insert({"_id": "c_exp", "key": "old", "value": "v", "_expires_at": int(time.time()) - 1})
+    cache.insert({"_id": "c_ok", "key": "new", "value": "v", "_expires_at": int(time.time()) + 60})
+
+    assert cache.get_by_id("c_exp") is None
+    assert cache.filter_first(_id="c_exp") is None
+
+    assert cache.get_by_id("c_ok") is not None
+    assert cache.filter_first(_id="c_ok") is not None
+
+
+def test_table_purge_ttl_deletes_expired_and_keeps_valid_rows():
+    @dataclass
+    class Token(Model):
+        value: str
+
+        class Meta:
+            ttl = 60
+
+    db = SillyDb(":memory:")
+    tokens = db.table("tokens", Token)
+
+    tokens.insert({"_id": "t_exp", "value": "expired", "_expires_at": int(time.time()) - 1})
+    tokens.insert({"_id": "t_ok", "value": "active", "_expires_at": int(time.time()) + 60})
+
+    deleted = tokens.purge_ttl()
+
+    assert deleted == 1
+    assert tokens.get_by_id("t_exp") is None
+    assert tokens.get_by_id("t_ok") is not None
+
+
+def test_table_purge_ttl_cleans_mto_relations():
+    @dataclass
+    class Parent(Model):
+        name: str
+
+        class Meta:
+            ttl = 60
+
+    @dataclass
+    class Child(Model):
+        name: str
+        parent_id: Mto | None = Mto("parents")
+
+    db = SillyDb(":memory:")
+    parents = db.table("parents", Parent)
+    children = db.table("children", Child)
+
+    parents.insert({"_id": "p_exp", "name": "old", "_expires_at": int(time.time()) - 1})
+    children.insert({"_id": "c1", "name": "kid", "parent_id": "p_exp"})
+
+    deleted = parents.purge_ttl()
+    child = children.get_by_id("c1")
+
+    assert deleted == 1
+    assert child is not None
+    assert child._data["parent_id"] is None
+
+
+def test_db_purge_ttl_calls_all_ttl_tables_and_skips_internal_tables():
+    @dataclass
+    class Cache(Model):
+        key: str
+
+        class Meta:
+            ttl = 60
+
+    @dataclass
+    class Session(Model):
+        token: str
+
+        class Meta:
+            ttl = 60
+
+    @dataclass
+    class User(Model):
+        name: str
+
+    db = SillyDb(":memory:")
+    cache = db.table("cache", Cache)
+    sessions = db.table("sessions", Session)
+    users = db.table("users", User)
+
+    cache.insert({"_id": "cache_exp", "key": "k", "_expires_at": int(time.time()) - 1})
+    sessions.insert({"_id": "sess_exp", "token": "tok", "_expires_at": int(time.time()) - 1})
+    users.insert({"_id": "user_1", "name": "alice"})
+
+    result = db.purge_ttl()
+
+    assert result == {"cache": 1, "sessions": 1}
+    assert cache.get_by_id("cache_exp") is None
+    assert sessions.get_by_id("sess_exp") is None
+    assert users.get_by_id("user_1") is not None
 
 
 def test_meta_unique_constraint_enforced():

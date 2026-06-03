@@ -156,11 +156,24 @@ The values are stored as integer unix timestamps in `_created_at` and `_updated_
 
 #### `ttl`
 
-Records are not physically deleted. Instead, an `_expires_at` column is set on insert (`now + ttl`). All queries (`filter()`, `count()`, `get()`, etc.) automatically exclude expired records.
+Records are not physically deleted automatically. Instead, an `_expires_at` column is set on insert (`now + ttl`) and expired rows are hidden from reads (`filter()`, `count()`, `get_by_id()`, `filter_first()`, etc.).
+
+When you want to physically remove expired rows, call one of the explicit purge methods:
+
+- `table.purge_ttl()` to purge one table (returns number of deleted rows)
+- `db.purge_ttl()` to purge every registered TTL table (returns a dict `{table_name: deleted_count}`)
 
 ```python
 class Meta:
     ttl = 60  # records expire after 60 seconds
+```
+
+```python
+deleted = cache_table.purge_ttl()
+print(deleted)  # 3
+
+summary = db.purge_ttl()
+print(summary)  # {'cache': 3, 'sessions': 1}
 ```
 
 #### `singleton`
