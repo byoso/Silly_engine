@@ -10,10 +10,17 @@ def test_get_by_id_returns_qitem_or_none(orm_tables):
 
     missing = knights.get_by_id("doesnotexist")
     assert missing is None
+
+
 def test_insert_without_id_generates_uuid_and_get_returns_qitem(orm_tables):
     _, knights, *_ = orm_tables
 
-    knights.insert({"name": "Arthur", "age": 40})
+    inserted = knights.insert({"name": "Arthur", "age": 40})
+
+    assert inserted is not None
+    assert inserted.q.name == "Arthur"
+    assert isinstance(inserted._data["_id"], str)
+    assert inserted._data["_id"]
 
     knight = knights.filter_first(name="Arthur")
     assert knight is not None
@@ -44,6 +51,24 @@ def test_update_scalar_fields(orm_tables):
     knight = knights.filter_first(_id="k1")
     assert knight.q.name == "Arthur Pendragon"
     assert knight.q.age == 41
+
+
+def test_qitem_update_updates_row_and_preserves_id(orm_tables):
+    _, knights, *_ = orm_tables
+
+    knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
+    knight = knights.get_by_id("k1")
+
+    updated = knight.update(name="King Arthur", age=41)
+    assert updated is knight
+    assert knight._data["_id"] == "k1"
+    assert knight.q.name == "King Arthur"
+    assert knight.q.age == 41
+
+    refreshed = knights.get_by_id("k1")
+    assert refreshed is not None
+    assert refreshed.q.name == "King Arthur"
+    assert refreshed.q.age == 41
 
 
 def test_query_iter_equals_all(orm_tables):
@@ -102,3 +127,30 @@ def test_bulk_delete_with_relational_filter_chain(orm_tables):
     assert affected == 1
     assert knights.filter_first(_id="k1") is None
     assert knights.filter_first(_id="k2") is not None
+
+
+def test_delete_returns_deleted_id_for_item_or_id(orm_tables):
+    _, knights, *_ = orm_tables
+
+    first = knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
+    second = knights.insert({"_id": "k2", "name": "Lancelot", "age": 35})
+
+    deleted_first = knights.delete(first)
+    deleted_second = knights.delete(second._data["_id"])
+
+    assert deleted_first == "k1"
+    assert deleted_second == "k2"
+    assert knights.get_by_id("k1") is None
+    assert knights.get_by_id("k2") is None
+
+
+def test_table_all_returns_same_items_as_filter_all(orm_tables):
+    _, knights, *_ = orm_tables
+
+    knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
+    knights.insert({"_id": "k2", "name": "Lancelot", "age": 35})
+
+    via_all_alias = knights.all()
+    via_filter = knights.filter().all()
+
+    assert [item._data["_id"] for item in via_all_alias] == [item._data["_id"] for item in via_filter]

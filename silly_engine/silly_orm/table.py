@@ -9,6 +9,7 @@ from .relations.mto import Mto
 from .relations.otm import Otm
 from .relations.oto import Oto
 from .tools import SillyDbError
+from .accessor import AccessorAttrValue
 
 class Table:
     def __init__(self, db, name: str, model: Type):
@@ -102,11 +103,11 @@ class Table:
         meta = self.model.get_meta()
         return bool(hasattr(meta, 'ttl') and meta.ttl)
 
-    def _fetch_row_data(self, **kwargs):
+    def _fetch_row_data(self, include_expired: bool = False, **kwargs):
         clauses = [f"{k}=?" for k in kwargs.keys()]
         params = list(kwargs.values())
 
-        if self._ttl_is_enabled():
+        if self._ttl_is_enabled() and not include_expired:
             clauses.append("_expires_at > ?")
             params.append(int(time.time()))
 
@@ -331,6 +332,10 @@ class Table:
             if not self.db._in_transaction:
                 self.db.connector.rollback()
             raise
+        row = self._fetch_row_data(include_expired=True, _id=source_id)
+        if row is None:
+            raise SillyDbError("Failed to retrieve item after insert")
+        return self._make_item(row)
 
     def update(self, _id: str | None = None, **data):
         if _id is None:
@@ -369,10 +374,15 @@ class Table:
                 self.db.connector.rollback()
             raise
 
-    def delete_by_id(self, _id: str):
+    def delete_by_id(self, _id: str | AccessorAttrValue):
+        record_data = getattr(_id, "_data", None)
+        record_id = record_data.get("_id") if isinstance(record_data, dict) else str(_id)
+        if record_id is None:
+            raise SillyDbError("delete_by_id requires a valid _id")
+
         try:
-            self._cleanup_relations_for_delete(_id)
-            self.db.connector.execute(f"DELETE FROM {self.name} WHERE _id=?", (_id,))
+            self._cleanup_relations_for_delete(record_id)
+            self.db.connector.execute(f"DELETE FROM {self.name} WHERE _id=?", (record_id,))
             if not self.db._in_transaction:
                 self.db.connector.commit()
         except Exception:
@@ -411,9 +421,15 @@ class Table:
             _id = item_or_id
 
         self.delete_by_id(_id)
+        return _id
 
-    def get_by_id(self, _id: str):
-        row = self._fetch_row_data(_id=_id)
+    def get_by_id(self, _id: str | AccessorAttrValue):
+        record_data = getattr(_id, "_data", None)
+        record_id = record_data.get("_id") if isinstance(record_data, dict) else str(_id)
+        if record_id is None:
+            return None
+
+        row = self._fetch_row_data(_id=record_id)
         if row is None:
             return None
         return self._make_item(row)
@@ -429,6 +445,9 @@ class Table:
 
     def filter(self, **kwargs):
         return Query(self).filter(**kwargs)
+
+    def all(self):
+        return Query(self).all()
 
     def first(self):
         return Query(self).first()

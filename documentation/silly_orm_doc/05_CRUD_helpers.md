@@ -8,12 +8,13 @@ Silly ORM exposes simple helpers for common operations.
 
 ```python
 # Basic insert
-Knights.insert({"name": "Arthur", "age": 40})
+arthur = Knights.insert({"name": "Arthur", "age": 40})
 
 # Insert with explicit ID
-Knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
+arthur = Knights.insert({"_id": "k1", "name": "Arthur", "age": 40})
 
-# Insert returns nothing; fetch with filter_first() or filter()
+# Insert returns a QItem
+print(arthur.q._id)
 ```
 
 ## Read (Get, Filter, Query)
@@ -44,6 +45,9 @@ assert missing is None
 ```python
 # All young knights
 young = Knights.filter(age__lt=35).all()
+
+# All rows from table (alias for Knights.filter().all())
+everyone = Knights.all()
 
 # Or iterate directly (no .all() needed)
 for knight in Knights.filter(age__lt=35):
@@ -113,10 +117,12 @@ print(affected)  # number of updated rows
 Knights.delete_by_id(arthur.q._id)
 
 # Or pass QItem directly
-Knights.delete(arthur)  # uses arthur._data["_id"]
+deleted_id = Knights.delete(arthur)  # uses arthur._data["_id"]
+assert deleted_id == "k1"
 
 # Or pass the ID
-Knights.delete("custom_id")
+deleted_id = Knights.delete("custom_id")
+assert deleted_id == "custom_id"
 
 # Bulk delete with filter chain
 affected = Knights.delete().filter(age__lt=30).execute()
@@ -210,6 +216,16 @@ assert arthur.q.courted_princesses.to_list() == []
 `relation(...)` is no longer part of the accessor API.
 
 ### QItem conversion
+
+### QItem in-place update
+
+```python
+arthur = Knights.get_by_id("k1")
+arthur.update(age=41, name="King Arthur")
+
+assert arthur.q.age == 41
+assert arthur.q.name == "King Arthur"
+```
 
 ```python
 # Single item to dict
